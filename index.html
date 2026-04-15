@@ -10,44 +10,77 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
-        h1, h2, h3, button, span.font-black { font-family: 'Archivo Black', sans-serif; }
-        body { background-color: #06080c; color: white; margin: 0; overflow-x: hidden; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f97316; border-radius: 10px; }
+        h1, h2, button { font-family: 'Archivo Black', sans-serif; }
     </style>
 </head>
-<body>
+<body class="bg-[#06080c] text-white">
     <div id="raiz"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // CONFIGURACIÓN REAL DE EAGLE MIND
         const firebaseConfig = {
-            apiKey: "AIzaSyCrjjeOoXPOtJDXDfrHLOA4Ny0QW2zfVWk",
+            apiKey: "AQUÍ_PEGA_TU_LLAVE_AIza", // <-- PASO FINAL: PEGA TU LLAVE AQUÍ
             authDomain: "apps-d45d6.firebaseapp.com",
             projectId: "apps-d45d6",
-            storageBucket: "apps-d45d6.firebasestorage.app",
-            messagingSenderId: "502648373937",
-            appId: "1:502648373937:web:8c3beaa2a6c9289a4d9890",
-            measurementId: "G-7VCRCRSCRQ"
+            storageBucket: "apps-d45d6.appspot.com",
+            messagingSenderId: "374528148386",
+            appId: "1:374528148386:web:8655e69e802058309e309d"
         };
 
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
         window.auth = getAuth(app);
-        window.firebaseUtils = { signInWithEmailAndPassword, onAuthStateChanged, signOut, collection, onSnapshot, addDoc, serverTimestamp };
+        window.firebaseLogin = { signInWithEmailAndPassword, onAuthStateChanged };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect } = React;
 
-        const EagleLogo = ({ className }) => (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-                <path d="M12 2L9.5 7L4.5 7.5L8.5 11L7.5 16L12 13.5L16.5 16L15.5 11L19.5 7.5L14.5 7L12 2Z" fill="currentColor" opacity="0.2"/>
-                <path d="M3 10c0 0 4-1 6 3s6 3 6 3 4-1 6-3" />
-                <path d="M12 4c-1.5 0-3 2-3 4s1.5 4 3 4 3-2 3-4-1.5-4-3-4z" />
+        function App() {
+            const [user, setUser] = useState(null);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
 
-                
+            useEffect(() => {
+                const unsub = window.firebaseLogin.onAuthStateChanged(window.auth, (u) => setUser(u));
+                return () => unsub();
+            }, []);
+
+            const entrar = async (e) => {
+                e.preventDefault();
+                try {
+                    await window.firebaseLogin.signInWithEmailAndPassword(window.auth, email, password);
+                } catch (err) {
+                    alert("Error: Revisa tus datos en Firebase");
+                }
+            };
+
+            if (!user) return (
+                <div className="h-screen flex items-center justify-center p-6">
+                    <div className="bg-[#0a0f18] p-10 rounded-[3rem] border border-white/5 w-full max-w-md text-center">
+                        <h2 className="text-3xl text-orange-500 mb-8 uppercase italic font-black">Eagle Mind</h2>
+                        <form onSubmit={entrar} className="space-y-4">
+                            <input type="email" placeholder="Correo" className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" onChange={e => setEmail(e.target.value)} />
+                            <input type="password" placeholder="Clave" className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" onChange={e => setPassword(e.target.value)} />
+                            <button type="submit" className="w-full bg-orange-500 text-black font-black py-4 rounded-2xl uppercase shadow-lg">Entrar</button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="h-screen flex flex-col items-center justify-center">
+                    <h1 className="text-5xl font-black italic text-orange-500 uppercase">¡Sistema Online!</h1>
+                    <p className="mt-4 opacity-50 uppercase tracking-widest font-bold">Bienvenido: {user.email}</p>
+                </div>
+            );
+        }
+
+        const raiz = ReactDOM.createRoot(document.getElementById('raiz'));
+        raiz.render(<App />);
+    </script>
+</body>
+</html>
