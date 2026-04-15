@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eagle Mind Corporation</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-black text-white font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const App = () => {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-900 text-white text-center">
+                    <div className="mb-6 animate-pulse">
+                        <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-orange-500/50">
+                             <i className="fas fa-eagle text-5xl text-black"></i>
+                        </div>
+                    </div>
+                    <h1 className="text-4xl font-black text-orange-500 tracking-tighter mb-2 uppercase">EAGLE MIND</h1>
+                    <p className="text-gray-400 mb-8 tracking-widest text-xs">SOFTWARE MANAGEMENT SYSTEM</p>
+                    
+                    <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-sm">
+                        <p className="text-sm mb-6 text-gray-300">Bienvenido al panel de control centralizado.</p>
+                        <button onClick={() => alert('Iniciando Sistema...')} className="w-full bg-orange-600 py-4 rounded-xl font-bold hover:bg-orange-500 transition-all shadow-lg active:scale-95">
+                            ACCEDER AL PANEL
+                        </button>
+                    </div>
+                    
+                    <footer className="mt-12 text-gray-500 text-xs uppercase tracking-tighter">
+                        Eagle Mind Corp &copy; 2026
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
