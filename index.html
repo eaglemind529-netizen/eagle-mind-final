@@ -11,7 +11,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
         h1, h2, button { font-family: 'Archivo Black', sans-serif; }
-        body { background-color: #06080c; color: white; margin: 0; overflow: hidden; }
+        body { background-color: #06080c; color: white; margin: 0; }
     </style>
 </head>
 <body>
@@ -22,11 +22,12 @@
         import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+        // DATOS EXTRAÍDOS DE TU CAPTURA DE PANTALLA
         const firebaseConfig = {
             apiKey: "AIzaSyCrjjeOoXPOtJDXDfrHLOA4Ny0QW2zfVWk",
             authDomain: "apps-d45d6.firebaseapp.com",
             projectId: "apps-d45d6",
-            storageBucket: "apps-d45d6.firebasestorage.app",
+            storageBucket: "apps-d45d6.appspot.com",
             messagingSenderId: "502648373937",
             appId: "1:502648373937:web:8c3beaa2a6c9289a4d9890"
         };
@@ -44,41 +45,59 @@
             const [user, setUser] = useState(null);
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
-            const [loading, setLoading] = useState(false);
 
             useEffect(() => {
                 const unsub = window.fb.onAuthStateChanged(window.auth, (u) => setUser(u));
                 return () => unsub();
             }, []);
 
-            const handleLogin = async (e) => {
+            const entrar = async (e) => {
                 e.preventDefault();
-                setLoading(true);
                 try {
                     await window.fb.signInWithEmailAndPassword(window.auth, email, password);
                 } catch (err) {
-                    alert("Error de acceso: Verifica que el usuario esté creado en Firebase Authentication.");
+                    alert("¡Atención! Verifica que el usuario " + email + " esté creado en la sección Authentication de Firebase.");
                 }
-                setLoading(false);
             };
 
-            if (!user) {
-                return (
-                    <div className="h-screen flex items-center justify-center p-6 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#0f172a] via-[#06080c] to-[#06080c]">
-                        <div className="bg-[#0a0f18]/80 backdrop-blur-xl p-10 rounded-[3rem] border border-white/5 w-full max-w-md shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                            <div className="text-center mb-8">
-                                <h2 className="text-4xl text-orange-500 uppercase italic font-black tracking-tighter">Eagle Mind</h2>
-                                <p className="text-[10px] text-white/30 tracking-[0.3em] uppercase mt-2">Central de Control</p>
-                            </div>
-                            <form onSubmit={handleLogin} className="space-y-4">
-                                <input 
-                                    type="email" 
-                                    placeholder="USUARIO" 
-                                    className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none focus:border-orange-500/50 transition-all text-center"
-                                    onChange={e => setEmail(e.target.value)}
-                                    required
-                                />
-                                <input 
-                                    type="password" 
-                                    placeholder="CONTRASEÑA" 
-                                    className="w
+            if (!user) return (
+                <div className="h-screen flex items-center justify-center p-6">
+                    <div className="bg-[#0a0f18] p-10 rounded-[3rem] border border-white/5 w-full max-w-md shadow-2xl">
+                        <h2 className="text-3xl text-orange-500 text-center mb-8 uppercase italic font-black">Eagle Mind</h2>
+                        <form onSubmit={entrar} className="space-y-4">
+                            <input 
+                                type="email" 
+                                placeholder="Tu Correo" 
+                                className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none text-center"
+                                onChange={e => setEmail(e.target.value)}
+                            />
+                            <input 
+                                type="password" 
+                                placeholder="Contraseña" 
+                                className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none text-center"
+                                onChange={e => setPassword(e.target.value)}
+                            />
+                            <button type="submit" className="w-full bg-orange-500 text-black font-black py-4 rounded-2xl uppercase hover:scale-95 transition-transform">
+                                ENTRAR AL SISTEMA
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="h-screen flex flex-col items-center justify-center text-center">
+                    <h1 className="text-6xl font-black italic uppercase text-orange-500">Conectado</h1>
+                    <p className="mt-4 uppercase tracking-[0.3em] font-bold opacity-50">Bienvenido: {user.email}</p>
+                    <div className="mt-10 p-6 bg-white/5 rounded-3xl border border-white/10">
+                        <p>El sistema está listo para procesar tus datos.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        const raiz = ReactDOM.createRoot(document.getElementById('raiz'));
+        raiz.render(<App />);
+    </script>
+</body>
+</html>
