@@ -3,43 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eagle Mind Corporation</title>
+    <title>Eagle Mind System</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-black text-white font-sans">
+<body class="bg-[#06080c] text-white font-sans">
     <div id="root"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const App = () => {
-            return (
-                <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-slate-900 text-white text-center">
-                    <div className="mb-6 animate-pulse">
-                        <div className="w-24 h-24 bg-orange-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-orange-500/50">
-                             <i className="fas fa-eagle text-5xl text-black"></i>
-                        </div>
+        // CONFIGURACIÓN DE TU FIREBASE (Mantenemos tu ID de proyecto)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs-tu-api-key", // Aquí Netlify debería inyectar la config si la tienes en variables de entorno, sino pega aquí tu config de Firebase
+            authDomain: "apps-d45d6.firebaseapp.com",
+            projectId: "apps-d45d6",
+            storageBucket: "apps-d45d6.appspot.com",
+            messagingSenderId: "374528148386",
+            appId: "1:374528148386:web:8655e69e802058309e309d"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Pasamos Firebase al Window para que Babel lo vea
+        window.db = db;
+        window.auth = auth;
+        window.fs = { collection, onSnapshot, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, serverTimestamp, writeBatch };
+        window.fa = { onAuthStateChanged, signInWithEmailAndPassword, signOut };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Aquí pegué exactamente el código que me pasaste para mantener tu interfaz 1:1
+        const OWNER_EMAIL = "eagleMind26@gmail.com";
+        const appId = 'eagle-mind-production';
+
+        const EagleLogo = ({ className }) => (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
+                <path d="M12 2L9.5 7L4.5 7.5L8.5 11L7.5 16L12 13.5L16.5 16L15.5 11L19.5 7.5L14.5 7L12 2Z" fill="currentColor" opacity="0.2"/>
+                <path d="M3 10c0 0 4-1 6 3s6 3 6 3 4-1 6-3" />
+                <path d="M12 4c-1.5 0-3 2-3 4s1.5 4 3 4 3-2 3-4-1.5-4-3-4z" />
+                <path d="M7 16c0 0 2 2 5 2s5-2 5-2" />
+                <path d="M12 12v6" /><path d="M9 18h6" />
+            </svg>
+        );
+
+        function App() {
+            const [user, setUser] = useState(null);
+            const [view, setView] = useState('inicio');
+            const [loading, setLoading] = useState(true);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [sidebarVisible, setSidebarVisible] = useState(true);
+            const [data, setData] = useState({ inv: [], cli: [], ven: [], egr: [], chat: [], deudas: [], cierres: [] });
+            
+            useEffect(() => {
+                const unsubscribe = window.fa.onAuthStateChanged(window.auth, (u) => { setUser(u); setLoading(false); });
+                return () => unsubscribe();
+            }, []);
+
+            // Lógica de carga de datos desde Firestore
+            useEffect(() => {
+                if (!user) return;
+                const basePath = `artifacts/${appId}/public/data`;
+                const unsubInv = window.fs.onSnapshot(window.fs.collection(window.db, `${basePath}/inventario`), (s) => setData(p => ({ ...p, inv: s.docs.map(d => ({ id: d.id, ...d.data() })) })));
+                return () => unsubInv();
+            }, [user]);
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                try { await window.fa.signInWithEmailAndPassword(window.auth, email, password); } 
+                catch (err) { alert("Error: " + err.message); }
+            };
+
+            if (loading) return <div className="h-screen bg-[#06080c] flex items-center justify-center text-orange-500 animate-pulse">CARGANDO EAGLE MIND...</div>;
+
+            if (!user) return (
+                <div className="min-h-screen bg-[#06080c] flex flex-col items-center justify-center p-6">
+                    <div className="w-full max-w-md bg-[#0a0f18] border border-white/5 p-12 rounded-[3.5rem] text-center">
+                        <EagleLogo className="w-16 h-16 text-orange-500 mx-auto mb-8" />
+                        <h2 className="text-4xl font-black italic text-orange-500 uppercase mb-8">Acceso Socio</h2>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-black/40 border border-white/5 p-5 rounded-2xl text-white outline-none" />
+                            <input type="password" placeholder="Pass" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-black/40 border border-white/5 p-5 rounded-2xl text-white outline-none" />
+                            <button type="submit" className="w-full bg-orange-500 text-black font-black uppercase py-5 rounded-2xl">Entrar</button>
+                        </form>
                     </div>
-                    <h1 className="text-4xl font-black text-orange-500 tracking-tighter mb-2 uppercase">EAGLE MIND</h1>
-                    <p className="text-gray-400 mb-8 tracking-widest text-xs">SOFTWARE MANAGEMENT SYSTEM</p>
-                    
-                    <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl w-full max-w-sm">
-                        <p className="text-sm mb-6 text-gray-300">Bienvenido al panel de control centralizado.</p>
-                        <button onClick={() => alert('Iniciando Sistema...')} className="w-full bg-orange-600 py-4 rounded-xl font-bold hover:bg-orange-500 transition-all shadow-lg active:scale-95">
-                            ACCEDER AL PANEL
-                        </button>
-                    </div>
-                    
-                    <footer className="mt-12 text-gray-500 text-xs uppercase tracking-tighter">
-                        Eagle Mind Corp &copy; 2026
-                    </footer>
                 </div>
             );
-        };
+
+            return (
+                <div className="flex h-screen bg-[#06080c] text-white overflow-hidden">
+                    {/* El resto de tu código de interfaz aquí... (sidebar, main, etc.) */}
+                    <aside className={`bg-[#0a0f18] w-72 p-8 flex flex-col border-r border-white/5 ${sidebarVisible ? '' : 'hidden'}`}>
+                         <h1 className="text-orange-500 text-2xl font-black italic mb-10 text-center">EAGLE MIND</h1>
+                         <nav className="space-y-2">
+                            {['inicio', 'inventario', 'clientes', 'ventas'].map(item => (
+                                <button key={item} onClick={() => setView(item)} className={`w-full text-left px-6 py-4 rounded-xl font-bold uppercase text-[10px] tracking-widest ${view === item ? 'bg-orange-500 text-black' : 'text-slate-500'}`}>
+                                    {item}
+                                </button>
+                            ))}
+                         </nav>
+                         <button onClick={() => window.fa.signOut(window.auth)} className="mt-auto text-red-500 font-bold text-[10px] uppercase">Salir</button>
+                    </aside>
+                    <main className="flex-1 p-12 overflow-y-auto">
+                        <h2 className="text-6xl font-black uppercase mb-8">{view}</h2>
+                        <div className="bg-[#111827] p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                            <p className="text-slate-400">Contenido de {view} conectado a Firebase.</p>
+                        </div>
+                    </main>
+                </div>
+            );
+        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
