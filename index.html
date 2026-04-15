@@ -1,33 +1,42 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eagle Mind System</title>
+    <title>Eagle Mind - Dashboard</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap');
-        h1, h2, button { font-family: 'Archivo Black', sans-serif; }
-        body { background-color: #06080c; color: white; margin: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;700&display=swap');
+        :root { --eagle-orange: #f97316; --eagle-black: #06080c; --eagle-card: #0a0f18; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--eagle-black); color: white; margin: 0; }
+        h1, h2, h3, .font-eagle { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; letter-spacing: -0.02em; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(249, 115, 22, 0.2); border-radius: 10px; }
+        .glass-card { background: rgba(10, 15, 24, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+        .chat-bg { background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: #06080c; }
+        .bubble-in { background-color: #202c33; border-radius: 0 15px 15px 15px; }
+        .bubble-out { background-color: #005c4b; border-radius: 15px 0 15px 15px; }
     </style>
 </head>
 <body>
-    <div id="raiz"></div>
+    <div id="root"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // DATOS EXTRAÍDOS DE TU CAPTURA DE PANTALLA
         const firebaseConfig = {
             apiKey: "AIzaSyCrjjeOoXPOtJDXDfrHLOA4Ny0QW2zfVWk",
             authDomain: "apps-d45d6.firebaseapp.com",
             projectId: "apps-d45d6",
-            storageBucket: "apps-d45d6.appspot.com",
+            storageBucket: "apps-d45d6.firebasestorage.app",
             messagingSenderId: "502648373937",
             appId: "1:502648373937:web:8c3beaa2a6c9289a4d9890"
         };
@@ -35,69 +44,442 @@
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
         window.auth = getAuth(app);
-        window.fb = { signInWithEmailAndPassword, onAuthStateChanged };
+        window.fb = { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc };
     </script>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         function App() {
             const [user, setUser] = useState(null);
+            const [userPerms, setUserPerms] = useState(null);
+            const [ownerUid, setOwnerUid] = useState(null); // UID del jefe (para compartir datos)
+            const [view, setView] = useState('dashboard');
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
+            const [isRegistering, setIsRegistering] = useState(false);
+            const [loading, setLoading] = useState(true);
+
+            const SUPER_ADMIN_EMAIL = "eagleMind26@gmail.com";
 
             useEffect(() => {
-                const unsub = window.fb.onAuthStateChanged(window.auth, (u) => setUser(u));
+                const unsub = window.fb.onAuthStateChanged(window.auth, async (u) => {
+                    if (u) {
+                        // Buscar si es un socio registrado por un dueño
+                        const q = window.fb.query(window.fb.collection(window.db, "partners"), window.fb.where("email", "==", u.email.toLowerCase().trim()));
+                        const querySnapshot = await window.fb.getDocs(q);
+                        
+                        if (!querySnapshot.empty) {
+                            const partnerData = querySnapshot.docs[0].data();
+                            setUserPerms(partnerData.permissions);
+                            setOwnerUid(partnerData.ownerUid); // El socio usa los datos del dueño
+                            
+                            // Redirigir a la primera vista permitida
+                            const firstAllowed = Object.keys(partnerData.permissions).find(k => partnerData.permissions[k]);
+                            if (firstAllowed) setView(firstAllowed);
+                        } else {
+                            setUserPerms(null);
+                            setOwnerUid(u.uid); // El dueño usa sus propios datos
+                        }
+                    }
+                    setUser(u);
+                    setLoading(false);
+                });
                 return () => unsub();
             }, []);
 
-            const entrar = async (e) => {
+            const handleAuth = async (e) => {
                 e.preventDefault();
                 try {
-                    await window.fb.signInWithEmailAndPassword(window.auth, email, password);
-                } catch (err) {
-                    alert("¡Atención! Verifica que el usuario " + email + " esté creado en la sección Authentication de Firebase.");
-                }
+                    if (isRegistering) await window.fb.createUserWithEmailAndPassword(window.auth, email, password);
+                    else await window.fb.signInWithEmailAndPassword(window.auth, email, password);
+                } catch (err) { alert("Error: " + err.message); }
             };
 
-            if (!user) return (
-                <div className="h-screen flex items-center justify-center p-6">
-                    <div className="bg-[#0a0f18] p-10 rounded-[3rem] border border-white/5 w-full max-w-md shadow-2xl">
-                        <h2 className="text-3xl text-orange-500 text-center mb-8 uppercase italic font-black">Eagle Mind</h2>
-                        <form onSubmit={entrar} className="space-y-4">
-                            <input 
-                                type="email" 
-                                placeholder="Tu Correo" 
-                                className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none text-center"
-                                onChange={e => setEmail(e.target.value)}
-                            />
-                            <input 
-                                type="password" 
-                                placeholder="Contraseña" 
-                                className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none text-center"
-                                onChange={e => setPassword(e.target.value)}
-                            />
-                            <button type="submit" className="w-full bg-orange-500 text-black font-black py-4 rounded-2xl uppercase hover:scale-95 transition-transform">
-                                ENTRAR AL SISTEMA
-                            </button>
-                        </form>
+            const canSee = (viewName) => {
+                if (!userPerms) return true; 
+                return userPerms[viewName];
+            };
+
+            if (loading) return <div className="h-screen bg-black flex items-center justify-center font-eagle text-orange-500 animate-pulse">Eagle Mind...</div>;
+
+            if (!user) {
+                return (
+                    <div className="h-screen flex items-center justify-center p-6 bg-black">
+                        <div className="glass-card p-10 rounded-[2.5rem] w-full max-w-md">
+                            <div className="text-center mb-8">
+                                <i className="fas fa-eagle text-5xl text-orange-500 mb-4"></i>
+                                <h2 className="text-3xl text-orange-500 font-eagle italic">Eagle Mind</h2>
+                                <p className="text-[10px] text-white/30 tracking-[0.4em] mt-1 uppercase">{isRegistering ? "Registro" : "Acceso"}</p>
+                            </div>
+                            <form onSubmit={handleAuth} className="space-y-4">
+                                <input type="email" placeholder="CORREO" className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none text-center text-sm" value={email} onChange={e => setEmail(e.target.value)} required />
+                                <input type="password" placeholder="CONTRASEÑA" className="w-full bg-black/50 border border-white/10 p-4 rounded-2xl outline-none text-center text-sm" value={password} onChange={e => setPassword(e.target.value)} required />
+                                <button type="submit" className="w-full bg-orange-500 text-black font-black py-4 rounded-2xl uppercase text-sm">{isRegistering ? "Crear Cuenta" : "Entrar"}</button>
+                            </form>
+                            <button onClick={() => setIsRegistering(!isRegistering)} className="w-full mt-6 text-[10px] text-white/30 uppercase font-bold tracking-widest">{isRegistering ? "Ya tengo cuenta" : "Quiero registrarme"}</button>
+                        </div>
                     </div>
-                </div>
-            );
+                );
+            }
 
             return (
-                <div className="h-screen flex flex-col items-center justify-center text-center">
-                    <h1 className="text-6xl font-black italic uppercase text-orange-500">Conectado</h1>
-                    <p className="mt-4 uppercase tracking-[0.3em] font-bold opacity-50">Bienvenido: {user.email}</p>
-                    <div className="mt-10 p-6 bg-white/5 rounded-3xl border border-white/10">
-                        <p>El sistema está listo para procesar tus datos.</p>
+                <div className="flex h-screen overflow-hidden">
+                    {/* Sidebar */}
+                    <div className="w-20 md:w-64 bg-[#0a0f18] border-r border-white/5 flex flex-col py-8 shrink-0">
+                        <div className="px-6 mb-12 flex items-center gap-3"><i className="fas fa-eagle text-orange-500 text-2xl"></i><span className="hidden md:block font-eagle text-xl italic text-orange-500">Eagle Mind</span></div>
+                        <nav className="flex-1 w-full px-4 space-y-2 overflow-y-auto custom-scrollbar">
+                            {canSee('dashboard') && <NavItem active={view === 'dashboard'} icon="fa-chart-line" label="Dashboard" onClick={() => setView('dashboard')} />}
+                            {canSee('sales') && <NavItem active={view === 'sales'} icon="fa-cart-shopping" label="Ventas" onClick={() => setView('sales')} />}
+                            {canSee('inventory') && <NavItem active={view === 'inventory'} icon="fa-box" label="Inventario" onClick={() => setView('inventory')} />}
+                            {canSee('debts') && <NavItem active={view === 'debts'} icon="fa-hand-holding-dollar" label="Cobros" onClick={() => setView('debts')} />}
+                            {canSee('clients') && <NavItem active={view === 'clients'} icon="fa-users" label="Clientes" onClick={() => setView('clients')} />}
+                            {canSee('chat') && <NavItem active={view === 'chat'} icon="fa-comments" label="Comunidad" onClick={() => setView('chat')} />}
+                            
+                            {!userPerms && (
+                                <div className="pt-4 border-t border-white/5 mt-4 space-y-2">
+                                    <NavItem active={view === 'administration'} icon="fa-gears" label="Ajustes Socios" onClick={() => setView('administration')} />
+                                    {user.email === SUPER_ADMIN_EMAIL && <NavItem active={view === 'admin'} icon="fa-crown" label="Jefe Global" onClick={() => setView('admin')} />}
+                                </div>
+                            )}
+                        </nav>
+                        <button onClick={() => window.fb.signOut(window.auth)} className="mt-auto p-6 text-white/20 hover:text-red-500 flex items-center justify-center md:justify-start gap-4 transition-colors">
+                            <i className="fas fa-sign-out-alt"></i>
+                            <span className="hidden md:block text-xs font-bold uppercase tracking-widest">Cerrar Sesión</span>
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <main className={`flex-1 overflow-hidden bg-[#06080c] relative ${view === 'chat' ? '' : 'p-4 md:p-10 overflow-y-auto custom-scrollbar'}`}>
+                        {view === 'dashboard' && <DashboardView uid={ownerUid} />}
+                        {view === 'sales' && <SalesView uid={ownerUid} />}
+                        {view === 'inventory' && <InventoryView uid={ownerUid} />}
+                        {view === 'debts' && <DebtsView uid={ownerUid} />}
+                        {view === 'clients' && <ClientsView uid={ownerUid} />}
+                        {view === 'chat' && <ChatView user={user} />}
+                        {view === 'admin' && <AdminPlaceholderView />}
+                        {view === 'administration' && <AdministrationView uid={user.uid} />}
+                    </main>
+                </div>
+            );
+        }
+
+        function NavItem({ icon, label, active, onClick }) {
+            return (
+                <div onClick={onClick} className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all ${active ? 'bg-orange-500 text-black shadow-lg shadow-orange-500/20' : 'text-white/40 hover:bg-white/5 hover:text-white'}`}>
+                    <i className={`fas ${icon} w-5 text-center`}></i>
+                    <span className="hidden md:block font-bold text-[10px] uppercase tracking-widest">{label}</span>
+                </div>
+            );
+        }
+
+        // --- Vistas de Componentes ---
+
+        function DashboardView({ uid }) {
+            const [stats, setStats] = useState({ sales: 0, debts: 0, prods: 0 });
+            useEffect(() => {
+                if(!uid) return;
+                const qSales = window.fb.query(window.fb.collection(window.db, "sales"), window.fb.where("uid", "==", uid));
+                const qDebts = window.fb.query(window.fb.collection(window.db, "debts"), window.fb.where("uid", "==", uid));
+                const qInv = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
+                
+                const unsubSales = window.fb.onSnapshot(qSales, s => { let t=0; s.forEach(d => t+=Number(d.data().total || 0)); setStats(prev => ({...prev, sales: t})) });
+                const unsubDebts = window.fb.onSnapshot(qDebts, s => { let t=0; s.forEach(d => t+=Number(d.data().amount || 0)); setStats(prev => ({...prev, debts: t})) });
+                const unsubInv = window.fb.onSnapshot(qInv, s => setStats(prev => ({...prev, prods: s.size})));
+                
+                return () => { unsubSales(); unsubDebts(); unsubInv(); };
+            }, [uid]);
+
+            return (
+                <div className="space-y-8 animate-in fade-in">
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <p className="text-orange-500 font-bold text-[10px] tracking-[0.3em] uppercase mb-1">Resumen de Negocio</p>
+                            <h1 className="text-4xl italic">Dashboard</h1>
+                        </div>
+                        <div className="text-right hidden md:block">
+                            <p className="text-white/20 text-[10px] uppercase font-bold">Estado del Sistema</p>
+                            <p className="text-green-500 text-xs font-black uppercase">En Línea</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <StatCard label="Ventas Totales" val={`$${stats.sales.toLocaleString()}`} icon="fa-sack-dollar" color="text-green-500" />
+                        <StatCard label="Cartera de Cobros" val={`$${stats.debts.toLocaleString()}`} icon="fa-hourglass-half" color="text-orange-500" />
+                        <StatCard label="Items en Stock" val={stats.prods} icon="fa-boxes-stacked" color="text-blue-500" />
                     </div>
                 </div>
             );
         }
 
-        const raiz = ReactDOM.createRoot(document.getElementById('raiz'));
-        raiz.render(<App />);
+        function StatCard({ label, val, icon, color }) {
+            return (
+                <div className="bg-[#0a0f18] border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden group">
+                    <div className={`absolute -right-4 -bottom-4 text-7xl opacity-[0.03] group-hover:opacity-[0.07] transition-opacity ${color}`}><i className={`fas ${icon}`}></i></div>
+                    <div className="flex items-center justify-between mb-4">
+                        <span className="text-white/30 text-[10px] font-bold uppercase tracking-widest">{label}</span>
+                        <div className={`w-10 h-10 rounded-full bg-white/5 flex items-center justify-center ${color}`}><i className={`fas ${icon} text-sm`}></i></div>
+                    </div>
+                    <div className="text-4xl font-eagle italic tracking-tighter">{val}</div>
+                </div>
+            );
+        }
+
+        function SalesView({ uid }) {
+            const [products, setProducts] = useState([]);
+            const [sale, setSale] = useState({ client: '', product: '', qty: 1, type: 'contado' });
+            
+            useEffect(() => {
+                if(!uid) return;
+                const q = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
+                return window.fb.onSnapshot(q, (snap) => setProducts(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
+            }, [uid]);
+
+            const register = async (e) => {
+                e.preventDefault();
+                const p = products.find(prod => prod.name === sale.product);
+                if (!p) return alert("Selecciona un producto válido");
+                const total = p.price * sale.qty;
+
+                await window.fb.addDoc(window.fb.collection(window.db, "sales"), { ...sale, total, uid, at: window.fb.serverTimestamp() });
+                
+                if (sale.type === 'crédito') {
+                    await window.fb.addDoc(window.fb.collection(window.db, "debts"), { 
+                        client: sale.client, 
+                        amount: total, 
+                        product: sale.product, 
+                        uid, 
+                        status: 'pendiente', 
+                        at: window.fb.serverTimestamp() 
+                    });
+                }
+                alert("Venta Registrada Exitosamente");
+                setSale({ client: '', product: '', qty: 1, type: 'contado' });
+            };
+
+            return (
+                <div className="space-y-8 animate-in fade-in">
+                    <h1 className="text-4xl italic">Registrar Venta</h1>
+                    <form onSubmit={register} className="bg-[#0a0f18] p-8 rounded-[2.5rem] border border-white/5 space-y-6 max-w-2xl">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-white/20 uppercase ml-2 tracking-widest">Cliente</label>
+                            <input className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none focus:border-orange-500/50 transition-colors" placeholder="Nombre del cliente" value={sale.client} onChange={e => setSale({...sale, client: e.target.value})} required />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-white/20 uppercase ml-2 tracking-widest">Producto</label>
+                            <select className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none appearance-none" value={sale.product} onChange={e => setSale({...sale, product: e.target.value})} required>
+                                <option value="">Seleccionar del inventario</option>
+                                {products.map(p => <option key={p.id} value={p.name}>{p.name} — ${p.price}</option>)}
+                            </select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-white/20 uppercase ml-2 tracking-widest">Cantidad</label>
+                                <input type="number" min="1" className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" value={sale.qty} onChange={e => setSale({...sale, qty: e.target.value})} required />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-white/20 uppercase ml-2 tracking-widest">Método</label>
+                                <select className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" value={sale.type} onChange={e => setSale({...sale, type: e.target.value})}>
+                                    <option value="contado">Contado</option>
+                                    <option value="crédito">Crédito (Deuda)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button className="w-full bg-orange-500 text-black font-black py-5 rounded-2xl uppercase tracking-widest hover:bg-orange-400 transition-all active:scale-[0.98]">Confirmar Transacción</button>
+                    </form>
+                </div>
+            );
+        }
+
+        function InventoryView({ uid }) {
+            const [items, setItems] = useState([]);
+            const [newItem, setNewItem] = useState({ name: '', qty: '', cost: '', price: '' });
+            
+            useEffect(() => {
+                if(!uid) return;
+                const q = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
+                return window.fb.onSnapshot(q, (snap) => setItems(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
+            }, [uid]);
+
+            const add = async (e) => {
+                e.preventDefault();
+                await window.fb.addDoc(window.fb.collection(window.db, "inventory"), { 
+                    ...newItem, 
+                    qty: Number(newItem.qty),
+                    cost: Number(newItem.cost),
+                    price: Number(newItem.price),
+                    uid, 
+                    at: window.fb.serverTimestamp() 
+                });
+                setNewItem({ name: '', qty: '', cost: '', price: '' });
+            };
+
+            return (
+                <div className="space-y-8 animate-in fade-in">
+                    <h1 className="text-4xl italic text-blue-500">Gestión de Stock</h1>
+                    <form onSubmit={add} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/5 p-8 rounded-[2rem] border border-white/5">
+                        <div className="md:col-span-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input className="bg-black/40 border border-white/10 p-4 rounded-xl outline-none md:col-span-2" placeholder="Nombre del Producto" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} required />
+                            <input type="number" className="bg-black/40 border border-white/10 p-4 rounded-xl outline-none" placeholder="Stock Inicial" value={newItem.qty} onChange={e => setNewItem({...newItem, qty: e.target.value})} required />
+                            <input type="number" className="bg-black/40 border border-white/10 p-4 rounded-xl outline-none" placeholder="Costo" value={newItem.cost} onChange={e => setNewItem({...newItem, cost: e.target.value})} />
+                            <input type="number" className="bg-black/40 border border-white/10 p-4 rounded-xl outline-none" placeholder="Precio Venta" value={newItem.price} onChange={e => setNewItem({...newItem, price: e.target.value})} required />
+                        </div>
+                        <button className="md:col-span-4 bg-blue-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-colors">Agregar al Almacén</button>
+                    </form>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-20">
+                        {items.map(item => (
+                            <div key={item.id} className="bg-[#0a0f18] p-6 rounded-3xl border border-white/5 hover:border-blue-500/30 transition-all group">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500"><i className="fas fa-box"></i></div>
+                                    <span className="text-[10px] bg-white/5 px-2 py-1 rounded font-bold text-white/40 uppercase">UID: {item.id.slice(0,5)}</span>
+                                </div>
+                                <h3 className="text-lg font-bold truncate group-hover:text-blue-400 transition-colors">{item.name}</h3>
+                                <div className="mt-4 flex items-end justify-between">
+                                    <div>
+                                        <p className="text-[10px] text-white/20 uppercase font-black">Disponibles</p>
+                                        <p className="text-3xl font-eagle italic">{item.qty}</p>
+                                    </div>
+                                    <p className="text-xl font-bold text-green-500">${item.price}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function AdministrationView({ uid }) {
+            const [partnerEmail, setPartnerEmail] = useState('');
+            const [partnerPass, setPartnerPass] = useState('');
+            const [partners, setPartners] = useState([]);
+            const [perms, setPerms] = useState({ dashboard: true, sales: true, inventory: true, debts: false, clients: true, chat: true });
+
+            useEffect(() => {
+                const q = window.fb.query(window.fb.collection(window.db, "partners"), window.fb.where("ownerUid", "==", uid));
+                return window.fb.onSnapshot(q, (snap) => setPartners(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
+            }, [uid]);
+
+            const createPartner = async (e) => {
+                e.preventDefault();
+                try {
+                    await window.fb.addDoc(window.fb.collection(window.db, "partners"), {
+                        email: partnerEmail.toLowerCase().trim(),
+                        password: partnerPass, 
+                        ownerUid: uid,
+                        role: 'socio',
+                        permissions: perms,
+                        at: window.fb.serverTimestamp()
+                    });
+                    alert("Socio Registrado. Recuerda que el socio debe crear su cuenta con este correo para vincular los permisos.");
+                    setPartnerEmail(''); setPartnerPass('');
+                } catch (err) { alert("Error al registrar socio"); }
+            };
+
+            return (
+                <div className="space-y-8 animate-in fade-in pb-20">
+                    <h1 className="text-4xl italic">Configuración de Socios</h1>
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                        <div className="bg-[#0a0f18] p-8 rounded-[2.5rem] border border-white/5 h-fit">
+                            <h3 className="text-xl font-bold mb-6 uppercase tracking-tighter">Vincular Nuevo Socio</h3>
+                            <form onSubmit={createPartner} className="space-y-6">
+                                <div className="space-y-4">
+                                    <input className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" placeholder="Correo del socio" value={partnerEmail} onChange={e => setPartnerEmail(e.target.value)} required />
+                                    <input type="password" className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl outline-none" placeholder="Contraseña de acceso" value={partnerPass} onChange={e => setPartnerPass(e.target.value)} required />
+                                </div>
+                                <div className="bg-black/30 p-6 rounded-3xl border border-white/5">
+                                    <p className="text-[10px] text-orange-500 font-black uppercase mb-4 tracking-widest">Permisos de Acceso</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {Object.keys(perms).map(k => (
+                                            <div key={k} onClick={() => setPerms(p => ({...p, [k]: !p[k]}))} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer border ${perms[k] ? 'bg-orange-500/10 border-orange-500/40 text-orange-500' : 'bg-black/40 border-white/5 text-white/20'}`}>
+                                                <span className="text-[9px] font-bold uppercase">{k}</span>
+                                                <i className={`fas ${perms[k] ? 'fa-check-circle' : 'fa-circle-xmark'}`}></i>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button className="w-full bg-orange-500 text-black font-black py-4 rounded-2xl uppercase text-sm hover:scale-[1.02] transition-transform">Guardar Socio</button>
+                            </form>
+                        </div>
+                        <div className="space-y-4">
+                            <h3 className="text-xl font-bold uppercase tracking-tighter ml-2">Equipo Actual</h3>
+                            {partners.map(p => (
+                                <div key={p.id} className="bg-[#0a0f18] p-6 rounded-3xl border border-white/5 flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-sm">{p.email}</p>
+                                        <p className="text-[10px] text-white/30 uppercase mt-1">Socio Activo</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {Object.entries(p.permissions).filter(([_,v])=>v).map(([k]) => (
+                                            <span key={k} className="w-2 h-2 rounded-full bg-orange-500" title={k}></span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function ChatView({ user }) {
+            const [msgs, setMsgs] = useState([]);
+            const [txt, setTxt] = useState('');
+            const scrollRef = useRef();
+            
+            useEffect(() => {
+                const q = window.fb.query(window.fb.collection(window.db, "global_chat"), window.fb.orderBy("at", "asc"));
+                return window.fb.onSnapshot(q, (snap) => setMsgs(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
+            }, []);
+
+            useEffect(() => { if(scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [msgs]);
+
+            const send = (e) => {
+                e.preventDefault(); if(!txt.trim()) return;
+                window.fb.addDoc(window.fb.collection(window.db, "global_chat"), { from: user.email, txt, at: window.fb.serverTimestamp() });
+                setTxt('');
+            };
+
+            return (
+                <div className="h-full flex flex-col chat-bg">
+                    <div className="bg-[#202c33] p-5 border-b border-white/5 flex items-center justify-between z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-black font-black text-xl italic">E</div>
+                            <div>
+                                <h3 className="text-sm font-black uppercase">Comunidad Eagle Mind</h3>
+                                <p className="text-[9px] text-green-500 font-bold uppercase animate-pulse">Chat en vivo</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                        {msgs.map(m => {
+                            const isMe = m.from === user.email;
+                            return (
+                                <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`max-w-[75%] px-4 py-3 shadow-2xl ${isMe ? 'bubble-out' : 'bubble-in'}`}>
+                                        {!isMe && <p className="text-[9px] font-black text-orange-400 uppercase mb-1">{m.from.split('@')[0]}</p>}
+                                        <p className="text-sm leading-relaxed">{m.txt}</p>
+                                        <p className="text-[8px] text-white/30 mt-1 text-right italic">Enviado</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <form onSubmit={send} className="bg-[#202c33] p-4 flex gap-3 border-t border-white/5">
+                        <input className="flex-1 bg-[#2a3942] p-4 rounded-2xl outline-none text-sm placeholder:text-white/20" placeholder="Escribe un mensaje..." value={txt} onChange={e => setTxt(e.target.value)} />
+                        <button className="bg-orange-500 text-black w-14 h-14 rounded-2xl flex items-center justify-center hover:scale-[1.05] transition-transform shadow-xl shadow-orange-500/20"><i className="fas fa-paper-plane text-lg"></i></button>
+                    </form>
+                </div>
+            );
+        }
+
+        // Vistas adicionales simples
+        function ClientsView({ uid }) { return <div className="animate-in slide-in-from-bottom-4"><h1 className="text-4xl italic mb-8">Directorio Clientes</h1><p className="text-white/40 italic">Módulo de clientes en mantenimiento...</p></div>; }
+        function DebtsView({ uid }) { return <div className="animate-in slide-in-from-bottom-4"><h1 className="text-4xl italic mb-8">Cuentas por Cobrar</h1><p className="text-white/40 italic">Módulo de cobros cargando datos...</p></div>; }
+        function AdminPlaceholderView() { return <div className="h-full flex flex-col items-center justify-center text-center p-10"><i className="fas fa-crown text-7xl text-orange-500 mb-8 animate-bounce"></i><h1 className="text-5xl italic mb-4">Master Panel</h1><p className="text-white/20 max-w-sm font-bold uppercase tracking-widest text-[10px]">Acceso total concedido al Administrador Global de Eagle Mind</p></div>; }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
+
+```
