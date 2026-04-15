@@ -1,68 +1,68 @@
-
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eagle Mind - Mobile</title>
-    <!-- React & Babel -->
+    <title>Eagle Mind - Mobile Pro</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- UI Frameworks -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f8fafc; 
-            color: #1e293b;
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #FDFDFD; 
+            color: #1A1A1A;
             margin: 0;
             overscroll-behavior-y: contain;
         }
 
-        .safe-area-bottom {
-            padding-bottom: env(safe-area-inset-bottom);
+        .header-yellow {
+            background-color: #FFD200;
         }
 
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .grid-card {
+            background: white;
+            border-radius: 1.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
 
-        .date-chip-active {
-            background-color: white !important;
-            color: #f97316 !important;
-            font-weight: 700;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .grid-card:active {
+            transform: scale(0.92);
+            background-color: #F8F8F8;
         }
 
         .bottom-nav {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid rgba(0,0,0,0.05);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(0,0,0,0.04);
         }
 
-        .btn-orange {
-            background-color: #f97316;
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .badge-premium {
+            background: #FFD200;
+            box-shadow: 0 2px 5px rgba(255, 210, 0, 0.4);
+        }
+
+        .badge-new {
+            background: #FF5A5A;
             color: white;
-            transition: all 0.2s ease;
         }
 
-        .btn-orange:active {
-            transform: scale(0.95);
-            filter: brightness(0.9);
-        }
-
-        .shadow-soft {
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
         }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -80,22 +80,7 @@
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
         window.auth = getAuth(app);
-        window.fb = { 
-            signInWithEmailAndPassword, 
-            createUserWithEmailAndPassword, 
-            onAuthStateChanged, 
-            signOut, 
-            collection, 
-            addDoc, 
-            onSnapshot, 
-            query, 
-            orderBy, 
-            serverTimestamp, 
-            where, 
-            getDocs, 
-            doc, 
-            updateDoc 
-        };
+        window.fb = { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc };
     </script>
 
     <script type="text/babel">
@@ -112,35 +97,27 @@
             const [loading, setLoading] = useState(true);
 
             useEffect(() => {
-                // Verificamos que Firebase esté listo antes de usarlo
-                const checkFirebase = setInterval(() => {
-                    if (window.fb && window.auth) {
-                        clearInterval(checkFirebase);
-                        const unsub = window.fb.onAuthStateChanged(window.auth, async (u) => {
-                            if (u) {
-                                try {
-                                    const q = window.fb.query(window.fb.collection(window.db, "partners"), window.fb.where("email", "==", u.email.toLowerCase().trim()));
-                                    const querySnapshot = await window.fb.getDocs(q);
-                                    if (!querySnapshot.empty) {
-                                        const partnerData = querySnapshot.docs[0].data();
-                                        setUserPerms(partnerData.permissions);
-                                        setOwnerUid(partnerData.ownerUid);
-                                        const firstAllowed = Object.keys(partnerData.permissions).find(k => partnerData.permissions[k]);
-                                        if (firstAllowed) setView(firstAllowed);
-                                    } else {
-                                        setUserPerms(null);
-                                        setOwnerUid(u.uid);
-                                    }
-                                } catch (e) {
-                                    console.error("Error fetching permissions:", e);
-                                    setOwnerUid(u.uid);
-                                }
+                const unsub = window.fb.onAuthStateChanged(window.auth, async (u) => {
+                    if (u) {
+                        try {
+                            const q = window.fb.query(window.fb.collection(window.db, "partners"), window.fb.where("email", "==", u.email.toLowerCase().trim()));
+                            const querySnapshot = await window.fb.getDocs(q);
+                            if (!querySnapshot.empty) {
+                                const partnerData = querySnapshot.docs[0].data();
+                                setUserPerms(partnerData.permissions);
+                                setOwnerUid(partnerData.ownerUid);
+                                const firstAllowed = Object.keys(partnerData.permissions).find(k => partnerData.permissions[k]);
+                                if (firstAllowed) setView(firstAllowed);
+                            } else {
+                                setUserPerms(null);
+                                setOwnerUid(u.uid);
                             }
-                            setUser(u);
-                            setLoading(false);
-                        });
+                        } catch (e) { setOwnerUid(u.uid); }
                     }
-                }, 100);
+                    setUser(u);
+                    setLoading(false);
+                });
+                return () => unsub();
             }, []);
 
             const handleAuth = async (e) => {
@@ -153,78 +130,67 @@
 
             if (loading) return (
                 <div className="h-screen flex items-center justify-center bg-white">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-orange-500 font-bold text-xs uppercase tracking-widest">Cargando...</p>
-                    </div>
+                    <div className="w-12 h-12 border-4 border-[#FFD200] border-t-transparent rounded-full animate-spin"></div>
                 </div>
             );
 
             if (!user) {
                 return (
-                    <div className="h-screen bg-white p-8 flex flex-col justify-center">
-                        <div className="text-center mb-10">
-                            <i className="fas fa-eagle text-6xl text-orange-500 mb-4"></i>
-                            <h1 className="text-3xl font-bold text-slate-900">Eagle Mind</h1>
-                            <p className="text-slate-400 text-sm mt-2">Accede a tu panel administrativo</p>
+                    <div className="h-screen bg-white p-10 flex flex-col justify-center">
+                        <div className="text-center mb-12">
+                            <div className="w-20 h-20 header-yellow rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-yellow-200">
+                                <i className="fas fa-eagle text-3xl text-black"></i>
+                            </div>
+                            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Eagle Mind</h1>
+                            <p className="text-slate-400 mt-2 font-medium">Gestiona tu éxito</p>
                         </div>
                         <form onSubmit={handleAuth} className="space-y-4">
-                            <input type="email" placeholder="Correo electrónico" className="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none focus:border-orange-500 transition-all" value={email} onChange={e => setEmail(e.target.value)} required />
-                            <input type="password" placeholder="Contraseña" className="w-full bg-slate-50 border border-slate-200 p-4 rounded-2xl outline-none focus:border-orange-500 transition-all" value={password} onChange={e => setPassword(e.target.value)} required />
-                            <button type="submit" className="w-full btn-orange font-bold py-4 rounded-2xl shadow-lg mt-2 uppercase tracking-widest">
-                                {isRegistering ? "Crear Cuenta" : "Iniciar Sesión"}
+                            <input type="email" placeholder="Correo" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
+                            <input type="password" placeholder="Contraseña" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
+                            <button type="submit" className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-2xl shadow-lg mt-4 active:scale-95 transition-all">
+                                {isRegistering ? "Unirse ahora" : "Iniciar Sesión"}
                             </button>
                         </form>
-                        <button onClick={() => setIsRegistering(!isRegistering)} className="mt-8 text-sm text-slate-500 font-bold w-full uppercase tracking-tight">
-                            {isRegistering ? "¿Ya tienes cuenta? Entra aquí" : "¿Eres nuevo? Regístrate gratis"}
-                        </button>
                     </div>
                 );
             }
 
             return (
-                <div className="h-screen flex flex-col bg-[#f8fafc] overflow-hidden">
-                    {/* Header Principal */}
-                    <header className="bg-orange-500 pt-12 pb-6 px-6 rounded-b-[2.5rem] shadow-lg shrink-0 relative z-20">
-                        <div className="flex justify-between items-center mb-6">
+                <div className="h-screen flex flex-col bg-[#FDFDFD] overflow-hidden">
+                    {/* Header Estilo App Referencia */}
+                    <header className="header-yellow pt-14 pb-8 px-6 rounded-b-[2.5rem] shrink-0">
+                        <div className="flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-                                    <i className="fas fa-user text-white text-sm"></i>
+                                <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                                    <i className="fas fa-user text-black text-sm"></i>
                                 </div>
                                 <div>
-                                    <h2 className="text-white font-bold text-sm leading-none flex items-center gap-1">
-                                        {user.email.split('@')[0]} <i className="fas fa-chevron-down text-[8px] opacity-70"></i>
-                                    </h2>
-                                    <p className="text-white/70 text-[10px] uppercase font-bold tracking-widest mt-1">Propietario</p>
+                                    <h2 className="text-black font-extrabold text-lg leading-none">frau</h2>
+                                    <p className="text-black/60 text-[10px] font-bold uppercase tracking-wider mt-1">Propietario</p>
                                 </div>
                             </div>
-                            <div className="flex gap-4 items-center">
-                                <i className="fas fa-search text-white text-lg opacity-90"></i>
-                                <i className="fas fa-sliders text-white text-lg opacity-90"></i>
-                            </div>
-                        </div>
-
-                        {/* Selector de Fechas */}
-                        <div className="flex gap-3 overflow-x-auto hide-scrollbar pb-1">
-                            {['12 abr', '13 abr', '14 abr', '15 abr', 'Hoy'].map((date, i) => (
-                                <div key={i} className={`px-5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${i === 3 ? 'date-chip-active' : 'text-white/80'}`}>
-                                    {date}
+                            <div className="flex gap-3">
+                                <div className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center">
+                                    <i className="fas fa-question text-black text-sm"></i>
                                 </div>
-                            ))}
-                            <div className="px-3 py-2 text-white/80"><i className="fas fa-calendar-alt"></i></div>
+                                <div className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center relative">
+                                    <i className="fas fa-bell text-black text-sm"></i>
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-yellow-400"></span>
+                                </div>
+                            </div>
                         </div>
                     </header>
 
-                    {/* Contenido */}
-                    <main className="flex-1 overflow-y-auto px-6 pt-6 pb-40 custom-scrollbar">
-                        {view === 'dashboard' && <DashboardView uid={ownerUid} setView={setView} />}
+                    {/* Contenido Principal */}
+                    <main className="flex-1 overflow-y-auto px-6 py-6 pb-28 hide-scrollbar">
+                        {view === 'dashboard' && <DashboardGrid setView={setView} />}
                         {view === 'sales' && <SalesView uid={ownerUid} />}
                         {view === 'inventory' && <InventoryView uid={ownerUid} />}
                         {view === 'debts' && <DebtsView uid={ownerUid} />}
                     </main>
 
                     {/* Barra de Navegación Inferior */}
-                    <nav className="bottom-nav fixed bottom-0 left-0 w-full h-20 px-8 flex justify-between items-center z-50 safe-area-bottom">
+                    <nav className="bottom-nav fixed bottom-0 left-0 w-full h-20 px-10 flex justify-between items-center z-50 safe-area-bottom">
                         <NavButton active={view === 'dashboard'} icon="fa-house" label="Inicio" onClick={() => setView('dashboard')} />
                         <NavButton active={view === 'sales'} icon="fa-chart-pie" label="Balance" onClick={() => setView('sales')} />
                         <NavButton active={view === 'debts'} icon="fa-hand-holding-dollar" label="Deudas" onClick={() => setView('debts')} />
@@ -236,102 +202,172 @@
 
         function NavButton({ icon, label, active, onClick }) {
             return (
-                <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all ${active ? 'text-orange-500 scale-110' : 'text-slate-400 opacity-60'}`}>
+                <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-black scale-110' : 'text-slate-300'}`}>
                     <i className={`fas ${icon} text-xl`}></i>
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{label}</span>
+                    <span className="text-[9px] font-extrabold uppercase tracking-tighter">{label}</span>
                 </button>
             );
         }
 
-        function DashboardView({ uid, setView }) {
-            const [stats, setStats] = useState({ sales: 0, debts: 0 });
+        function DashboardGrid({ setView }) {
+            return (
+                <div className="animate-in fade-in duration-500">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-extrabold text-black">Servicios</h3>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ver todo</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                        <GridItem icon="fa-store" label="Catálogo" color="bg-blue-50" text="text-blue-500" badge="Nuevo" badgeType="new" />
+                        <GridItem icon="fa-file-invoice-dollar" label="Cotización" color="bg-orange-50" text="text-orange-500" />
+                        <GridItem icon="fa-hand-holding-heart" label="Deudas" color="bg-purple-50" text="text-purple-500" onClick={() => setView('debts')} />
+                        
+                        <GridItem icon="fa-chart-simple" label="Estadística" color="bg-emerald-50" text="text-emerald-500" badge="★" badgeType="premium" />
+                        <GridItem icon="fa-users" label="Clientes" color="bg-rose-50" text="text-rose-500" />
+                        <GridItem icon="fa-truck-field" label="Proveedores" color="bg-amber-50" text="text-amber-500" />
+                        
+                        <GridItem icon="fa-user-tie" label="Empleados" color="bg-indigo-50" text="text-indigo-500" />
+                        <GridItem icon="fa-boxes-stacked" label="Inventario" color="bg-slate-50" text="text-slate-600" onClick={() => setView('inventory')} />
+                        <GridItem icon="fa-gear" label="Ajustes" color="bg-slate-50" text="text-slate-400" />
+                    </div>
 
+                    {/* Banner Publicitario Estilo App */}
+                    <div className="mt-8 bg-black rounded-[2rem] p-6 relative overflow-hidden">
+                        <div className="relative z-10">
+                            <h4 className="text-[#FFD200] font-extrabold text-lg">Eagle Mind Pro</h4>
+                            <p className="text-white/60 text-xs mt-1 max-w-[150px]">Accede a herramientas avanzadas de gestión financiera.</p>
+                            <button className="mt-4 bg-[#FFD200] text-black text-[10px] font-extrabold uppercase py-2 px-4 rounded-full">Actualizar</button>
+                        </div>
+                        <i className="fas fa-crown absolute right-[-10px] bottom-[-10px] text-white/10 text-8xl"></i>
+                    </div>
+                </div>
+            );
+        }
+
+        function GridItem({ icon, label, color, text, badge, badgeType, onClick }) {
+            return (
+                <div onClick={onClick} className="grid-card p-4 flex flex-col items-center justify-center relative cursor-pointer">
+                    {badge && (
+                        <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase ${badgeType === 'new' ? 'badge-new' : 'badge-premium text-black'}`}>
+                            {badge}
+                        </span>
+                    )}
+                    <div className={`w-12 h-12 ${color} rounded-2xl flex items-center justify-center mb-3`}>
+                        <i className={`fas ${icon} ${text} text-xl`}></i>
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-800 text-center tracking-tight">{label}</span>
+                </div>
+            );
+        }
+
+        function SalesView({ uid }) {
+            const [products, setProducts] = useState([]);
+            const [sale, setSale] = useState({ client: '', product: '', qty: 1, type: 'contado' });
+            
             useEffect(() => {
                 if(!uid) return;
-                const qSales = window.fb.query(window.fb.collection(window.db, "sales"), window.fb.where("uid", "==", uid));
-                const unsubSales = window.fb.onSnapshot(qSales, s => { 
-                    let t=0; s.forEach(d => t+=Number(d.data().total || 0)); 
-                    setStats(prev => ({...prev, sales: t}));
-                });
-                return () => unsubSales();
+                const q = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
+                return window.fb.onSnapshot(q, (snap) => setProducts(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
+            }, [uid]);
+
+            const register = async (e) => {
+                e.preventDefault();
+                const p = products.find(prod => prod.name === sale.product);
+                if (!p) return alert("Selecciona producto");
+                const total = p.price * sale.qty;
+                await window.fb.addDoc(window.fb.collection(window.db, "sales"), { ...sale, total, uid, at: window.fb.serverTimestamp() });
+                alert("Operación exitosa");
+            };
+
+            return (
+                <div className="animate-in slide-in-from-bottom-4 duration-500">
+                    <h2 className="text-2xl font-extrabold mb-6">Nuevo Movimiento</h2>
+                    <form onSubmit={register} className="bg-white p-6 rounded-[2rem] shadow-sm space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Cliente</label>
+                            <input className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={sale.client} onChange={e => setSale({...sale, client: e.target.value})} required />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Producto</label>
+                            <select className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none appearance-none" value={sale.product} onChange={e => setSale({...sale, product: e.target.value})} required>
+                                <option value="">Seleccionar...</option>
+                                {products.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                            </select>
+                        </div>
+                        <button className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-2xl mt-4">Confirmar</button>
+                    </form>
+                </div>
+            );
+        }
+
+        function InventoryView({ uid }) {
+            const [items, setItems] = useState([]);
+            useEffect(() => {
+                if(!uid) return;
+                const q = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
+                return window.fb.onSnapshot(q, (snap) => setItems(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
             }, [uid]);
 
             return (
-                <div className="space-y-6 animate-in fade-in duration-500">
-                    {/* Tarjeta de Balance Central */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-slate-100">
-                        <div className="flex justify-between items-center mb-6">
-                            <span className="text-slate-400 text-sm font-medium">Balance General</span>
-                            <span className="text-slate-900 font-bold text-xl">${stats.sales.toLocaleString()}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <div className="flex items-center gap-2 text-emerald-500 text-[10px] font-bold uppercase mb-1">
-                                    <i className="fas fa-arrow-trend-up"></i> Ingresos
+                <div className="animate-in slide-in-from-right-4 duration-500">
+                    <h2 className="text-2xl font-extrabold mb-6">Inventario</h2>
+                    <div className="space-y-3">
+                        {items.map(item => (
+                            <div key={item.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm border border-slate-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center">
+                                        <i className="fas fa-box text-slate-400"></i>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-900">{item.name}</h4>
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tighter">Stock: {item.qty} un.</p>
+                                    </div>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-800">${stats.sales.toLocaleString()}</div>
-                            </div>
-                            <div className="border-l border-slate-100 pl-6">
-                                <div className="flex items-center gap-2 text-rose-500 text-[10px] font-bold uppercase mb-1">
-                                    <i className="fas fa-arrow-trend-down"></i> Egresos
+                                <div className="text-right">
+                                    <div className="text-black font-extrabold">${item.price}</div>
                                 </div>
-                                <div className="text-2xl font-bold text-slate-800">$0</div>
                             </div>
-                        </div>
-                        <div className="mt-8 pt-6 border-t border-slate-50 flex justify-between items-center">
-                            <button className="text-orange-500 text-[11px] font-bold uppercase tracking-widest">Descargar PDF</button>
-                            <button className="bg-slate-50 px-4 py-2 rounded-full text-slate-400 text-[11px] font-bold uppercase flex items-center gap-2">
-                                Detalles <i className="fas fa-chevron-right text-[8px]"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Botones de Acción Rápidos */}
-                    <div className="flex gap-4">
-                        <button onClick={() => setView('sales')} className="flex-1 btn-orange py-5 rounded-[1.5rem] font-bold text-sm shadow-xl shadow-orange-500/20 flex flex-col items-center gap-2">
-                            <i className="fas fa-plus-circle text-xl"></i> Nueva Venta
-                        </button>
-                        <button className="flex-1 bg-slate-900 text-white py-5 rounded-[1.5rem] font-bold text-sm shadow-xl flex flex-col items-center gap-2">
-                            <i className="fas fa-minus-circle text-xl"></i> Nuevo Gasto
-                        </button>
-                    </div>
-
-                    {/* Selector de tipo de registro */}
-                    <div className="flex border-b border-slate-100 mt-4">
-                        <button className="flex-1 py-3 text-sm font-bold border-b-2 border-orange-500 text-slate-800">Ingresos</button>
-                        <button className="flex-1 py-3 text-sm font-medium text-slate-400">Egresos</button>
-                    </div>
-
-                    {/* Empty State */}
-                    <div className="py-10 flex flex-col items-center justify-center text-center opacity-60">
-                        <div className="w-32 h-32 mb-4">
-                            <img src="https://cdn-icons-png.flaticon.com/512/261/261778.png" className="w-full grayscale opacity-50" alt="reloj" />
-                        </div>
-                        <p className="text-slate-500 text-sm font-medium">No se encontraron movimientos<br/>en esta fecha.</p>
+                        ))}
                     </div>
                 </div>
             );
         }
 
-        // Vistas adicionales simplificadas para evitar errores de renderizado
-        function SalesView({ uid }) {
+        function DebtsView({ uid }) {
+            const [debts, setDebts] = useState([]);
+            useEffect(() => {
+                if(!uid) return;
+                const q = window.fb.query(window.fb.collection(window.db, "debts"), window.fb.where("uid", "==", uid));
+                return window.fb.onSnapshot(q, (snap) => setDebts(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
+            }, [uid]);
+
             return (
-                <div className="animate-in slide-in-from-bottom-4 duration-300">
-                    <h1 className="text-2xl font-bold mb-6">Nueva Venta</h1>
-                    <div className="bg-white p-6 rounded-[2rem] shadow-soft text-center py-20">
-                        <i className="fas fa-cash-register text-4xl text-slate-200 mb-4"></i>
-                        <p className="text-slate-400">Cargando formulario de ventas...</p>
+                <div className="animate-in slide-in-from-left-4 duration-500">
+                    <h2 className="text-2xl font-extrabold mb-6">Cobros pendientes</h2>
+                    <div className="space-y-3">
+                        {debts.map(d => (
+                            <div key={d.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400">
+                                        <i className="fas fa-clock"></i>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-900">{d.client}</h4>
+                                        <p className="text-rose-400 text-[10px] font-bold uppercase tracking-tighter">{d.product}</p>
+                                    </div>
+                                </div>
+                                <div className="text-rose-500 font-extrabold">${d.amount}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             );
         }
-
-        function InventoryView() { return <div className="p-4 text-slate-400 italic">Módulo de inventario...</div>; }
-        function DebtsView() { return <div className="p-4 text-slate-400 italic">Módulo de deudas...</div>; }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
+</html>
 
-
+```
