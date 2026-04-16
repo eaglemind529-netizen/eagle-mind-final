@@ -21,38 +21,19 @@
             overscroll-behavior-y: contain;
         }
 
-        .header-yellow {
-            background-color: #FFD200;
-        }
-
-        .grid-card {
-            background: white;
-            border-radius: 1.5rem;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-        }
-
-        .grid-card:active {
-            transform: scale(0.92);
-            background-color: #F8F8F8;
-        }
-
-        .bottom-nav {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            border-top: 1px solid rgba(0,0,0,0.04);
-        }
-
+        .header-yellow { background-color: #FFD200; }
+        .grid-card { background: white; border-radius: 1.5rem; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .grid-card:active { transform: scale(0.92); background-color: #F8F8F8; }
+        .bottom-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); border-top: 1px solid rgba(0,0,0,0.04); }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        
-        .safe-area-bottom {
-            padding-bottom: env(safe-area-inset-bottom);
-        }
+        .animate-fade { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
+    <!-- Firebase SDK Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -74,23 +55,29 @@
         window.appId = firebaseConfig.appId;
     </script>
 
+    <!-- React App -->
     <script type="text/babel">
         const { useState, useEffect } = React;
 
         function App() {
             const [user, setUser] = useState(null);
             const [view, setView] = useState('dashboard');
+            const [loading, setLoading] = useState(true);
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
             const [isRegistering, setIsRegistering] = useState(false);
-            const [loading, setLoading] = useState(true);
 
             useEffect(() => {
-                const unsub = window.fb.onAuthStateChanged(window.auth, async (u) => {
-                    setUser(u);
-                    setLoading(false);
-                });
-                return () => unsub();
+                const init = () => {
+                    if (window.fb && window.auth) {
+                        return window.fb.onAuthStateChanged(window.auth, (u) => {
+                            setUser(u);
+                            setLoading(false);
+                        });
+                    }
+                    setTimeout(init, 200);
+                };
+                init();
             }, []);
 
             const handleAuth = async (e) => {
@@ -102,41 +89,33 @@
             };
 
             if (loading) return (
-                <div className="h-screen flex items-center justify-center bg-white">
-                    <div className="w-12 h-12 border-4 border-[#FFD200] border-t-transparent rounded-full animate-spin"></div>
+                <div className="h-screen flex items-center justify-center bg-white font-bold">
+                    <div className="text-center">
+                        <div className="w-12 h-12 border-4 border-[#FFD200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p>Cargando Eagle Mind...</p>
+                    </div>
                 </div>
             );
 
-            if (!user) {
-                return (
-                    <div className="h-screen bg-white p-10 flex flex-col justify-center">
-                        <div className="text-center mb-12">
-                            <div className="w-20 h-20 header-yellow rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-yellow-200">
-                                <i className="fas fa-eagle text-3xl text-black"></i>
-                            </div>
-                            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Eagle Mind</h1>
-                            <p className="text-slate-400 mt-2 font-medium">Gestiona tu éxito</p>
+            if (!user) return (
+                <div className="h-screen bg-white p-10 flex flex-col justify-center">
+                    <div className="text-center mb-12">
+                        <div className="w-20 h-20 header-yellow rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-yellow-200">
+                            <i className="fas fa-eagle text-3xl text-black"></i>
                         </div>
-                        <form onSubmit={handleAuth} className="space-y-4">
-                            <input type="email" placeholder="Correo" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
-                            <input type="password" placeholder="Contraseña" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
-                            <div className="flex gap-2 pt-4">
-                                <button type="submit" onClick={() => setIsRegistering(false)} className="flex-1 bg-black text-[#FFD200] font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
-                                    Entrar
-                                </button>
-                                <button type="submit" onClick={() => setIsRegistering(true)} className="flex-1 bg-slate-100 text-black font-bold py-4 rounded-2xl active:scale-95 transition-all">
-                                    Registrarse
-                                </button>
-                            </div>
-                            <div className="text-center mt-4 px-4">
-                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest bg-amber-50 py-2 rounded-full border border-amber-100">
-                                    <i className="fas fa-clock mr-1"></i> El período de prueba es por tiempo limitado
-                                </p>
-                            </div>
-                        </form>
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Eagle Mind</h1>
+                        <p className="text-slate-400 mt-2 font-medium">Gestiona tu éxito</p>
                     </div>
-                );
-            }
+                    <form onSubmit={handleAuth} className="space-y-4">
+                        <input type="email" placeholder="Correo" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
+                        <input type="password" placeholder="Contraseña" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
+                        <div className="flex gap-2 pt-4">
+                            <button type="submit" onClick={() => setIsRegistering(false)} className="flex-1 bg-black text-[#FFD200] font-bold py-4 rounded-2xl">Entrar</button>
+                            <button type="submit" onClick={() => setIsRegistering(true)} className="flex-1 bg-slate-100 text-black font-bold py-4 rounded-2xl">Unirse</button>
+                        </div>
+                    </form>
+                </div>
+            );
 
             return (
                 <div className="h-screen flex flex-col bg-[#FDFDFD] overflow-hidden">
@@ -147,19 +126,17 @@
                                     <i className="fas fa-user text-black text-sm"></i>
                                 </div>
                                 <div>
-                                    <h2 className="text-black font-extrabold text-lg leading-none">{user.email.split('@')[0]}</h2>
-                                    <p className="text-black/60 text-[10px] font-bold uppercase tracking-wider mt-1">Propietario</p>
+                                    <h2 className="text-black font-extrabold text-lg leading-none truncate w-32">{user.email.split('@')[0]}</h2>
+                                    <p className="text-black/60 text-[10px] font-bold uppercase tracking-wider mt-1">Nivel Pro</p>
                                 </div>
                             </div>
-                            <div className="flex gap-3">
-                                <button onClick={() => window.fb.signOut(window.auth)} className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center">
-                                    <i className="fas fa-sign-out-alt text-black text-sm"></i>
-                                </button>
-                            </div>
+                            <button onClick={() => window.fb.signOut(window.auth)} className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center">
+                                <i className="fas fa-sign-out-alt text-black text-sm"></i>
+                            </button>
                         </div>
                     </header>
 
-                    <main className="flex-1 overflow-y-auto px-6 py-6 pb-28 hide-scrollbar">
+                    <main className="flex-1 overflow-y-auto px-6 py-6 pb-28 hide-scrollbar animate-fade">
                         {view === 'dashboard' && <DashboardGrid setView={setView} />}
                         {view === 'clientes' && <ClientesView userId={user.uid} />}
                         {view === 'ventas' && <VentasView userId={user.uid} />}
@@ -169,7 +146,7 @@
                         {view === 'creditos' && <CreditosView userId={user.uid} />}
                     </main>
 
-                    <nav className="bottom-nav fixed bottom-0 left-0 w-full h-20 px-10 flex justify-between items-center z-50 safe-area-bottom">
+                    <nav className="bottom-nav fixed bottom-0 left-0 w-full h-20 px-10 flex justify-between items-center z-50">
                         <NavButton active={view === 'dashboard'} icon="fa-house" label="Inicio" onClick={() => setView('dashboard')} />
                         <NavButton active={view === 'ventas'} icon="fa-cart-shopping" label="Ventas" onClick={() => setView('ventas')} />
                         <NavButton active={view === 'estadisticas'} icon="fa-chart-pie" label="Stats" onClick={() => setView('estadisticas')} />
@@ -181,49 +158,33 @@
 
         function NavButton({ icon, label, active, onClick }) {
             return (
-                <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all ${active ? 'text-black scale-110' : 'text-slate-300'}`}>
+                <button onClick={onClick} className={`flex flex-col items-center gap-1.5 ${active ? 'text-black' : 'text-slate-300'}`}>
                     <i className={`fas ${icon} text-xl`}></i>
-                    <span className="text-[9px] font-extrabold uppercase tracking-tighter">{label}</span>
+                    <span className="text-[9px] font-extrabold uppercase">{label}</span>
                 </button>
             );
         }
 
         function DashboardGrid({ setView }) {
             return (
-                <div className="animate-in fade-in duration-500">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-extrabold text-black">Servicios</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-4">
-                        <GridItem icon="fa-users" label="Clientes" color="bg-rose-50" text="text-rose-500" onClick={() => setView('clientes')} />
-                        <GridItem icon="fa-cart-plus" label="Ventas" color="bg-emerald-50" text="text-emerald-500" onClick={() => setView('ventas')} />
-                        <GridItem icon="fa-chart-simple" label="Estadística" color="bg-blue-50" text="text-blue-500" onClick={() => setView('estadisticas')} />
-                        
-                        <GridItem icon="fa-hand-holding-dollar" label="Créditos" color="bg-orange-50" text="text-orange-500" onClick={() => setView('creditos')} />
-                        <GridItem icon="fa-truck-field" label="Gastos" color="bg-red-50" text="text-red-500" onClick={() => setView('egresos')} />
-                        <GridItem icon="fa-box-archive" label="Inventario" color="bg-slate-50" text="text-slate-600" onClick={() => setView('inventory')} />
-                    </div>
-
-                    <div className="mt-8 bg-black rounded-[2rem] p-6 relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h4 className="text-[#FFD200] font-extrabold text-lg">Eagle Mind Pro</h4>
-                            <p className="text-white/60 text-xs mt-1 max-w-[150px]">Accede a herramientas avanzadas de gestión financiera.</p>
-                            <button className="mt-4 bg-[#FFD200] text-black text-[10px] font-extrabold uppercase py-2 px-4 rounded-full">Actualizar</button>
-                        </div>
-                        <i className="fas fa-crown absolute right-[-10px] bottom-[-10px] text-white/10 text-8xl"></i>
-                    </div>
+                <div className="grid grid-cols-3 gap-4">
+                    <GridItem icon="fa-users" label="Clientes" color="bg-rose-50" text="text-rose-500" onClick={() => setView('clientes')} />
+                    <GridItem icon="fa-cart-plus" label="Nueva Venta" color="bg-emerald-50" text="text-emerald-500" onClick={() => setView('ventas')} />
+                    <GridItem icon="fa-chart-simple" label="Estadística" color="bg-blue-50" text="text-blue-500" onClick={() => setView('estadisticas')} />
+                    <GridItem icon="fa-hand-holding-dollar" label="Cobros/C" color="bg-orange-50" text="text-orange-500" onClick={() => setView('creditos')} />
+                    <GridItem icon="fa-truck-field" label="Gastos" color="bg-red-50" text="text-red-500" onClick={() => setView('egresos')} />
+                    <GridItem icon="fa-box-archive" label="Inventario" color="bg-slate-50" text="text-slate-600" onClick={() => setView('inventory')} />
                 </div>
             );
         }
 
         function GridItem({ icon, label, color, text, onClick }) {
             return (
-                <div onClick={onClick} className="grid-card p-4 flex flex-col items-center justify-center relative cursor-pointer">
+                <div onClick={onClick} className="grid-card p-4 flex flex-col items-center justify-center cursor-pointer">
                     <div className={`w-12 h-12 ${color} rounded-2xl flex items-center justify-center mb-3`}>
                         <i className={`fas ${icon} ${text} text-xl`}></i>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-800 text-center tracking-tight">{label}</span>
+                    <span className="text-[10px] font-bold text-slate-800 text-center leading-tight">{label}</span>
                 </div>
             );
         }
@@ -245,24 +206,56 @@
             };
 
             return (
-                <div className="animate-in slide-in-from-right-4 duration-500">
-                    <h2 className="text-2xl font-extrabold mb-6">Gestión de Clientes</h2>
-                    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-[2rem] shadow-sm space-y-3 mb-6">
-                        <input placeholder="Código" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.codigo} onChange={e => setForm({...form, codigo: e.target.value})} required />
-                        <input placeholder="Nombre" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} required />
+                <div>
+                    <h2 className="text-2xl font-black mb-6">Clientes</h2>
+                    <form onSubmit={handleSubmit} className="bg-white p-5 rounded-[2rem] shadow-sm space-y-3 mb-6">
+                        <input placeholder="Cód. Cliente" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.codigo} onChange={e => setForm({...form, codigo: e.target.value})} required />
+                        <input placeholder="Nombre Completo" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} required />
                         <input placeholder="Teléfono" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})} required />
                         <button className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-xl">Crear Cliente</button>
                     </form>
                     <div className="space-y-3">
                         {clientes.map(c => (
                             <div key={c.id} className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
-                                <div>
-                                    <p className="font-bold text-slate-900">{c.nombre}</p>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Cód: {c.codigo} • {c.telefono}</p>
-                                </div>
-                                <div className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center">
-                                    <i className="fas fa-user text-slate-300 text-xs"></i>
-                                </div>
+                                <div><p className="font-bold">{c.nombre}</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cód: {c.codigo}</p></div>
+                                <i className="fas fa-chevron-right text-slate-200"></i>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function InventoryView({ userId }) {
+            const [products, setProducts] = useState([]);
+            const [form, setForm] = useState({ nombre: '', precio: '', stock: '' });
+            const path = `/artifacts/${window.appId}/users/${userId}/inventario`;
+
+            useEffect(() => {
+                const q = window.fb.query(window.fb.collection(window.db, path), window.fb.orderBy('nombre'));
+                return window.fb.onSnapshot(q, (snap) => setProducts(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+            }, [userId]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                await window.fb.addDoc(window.fb.collection(window.db, path), { ...form, precio: parseFloat(form.precio), stock: parseInt(form.stock) });
+                setForm({ nombre: '', precio: '', stock: '' });
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-black mb-6">Stock</h2>
+                    <form onSubmit={handleSubmit} className="bg-white p-5 rounded-[2rem] shadow-sm space-y-3 mb-6">
+                        <input placeholder="Nombre Producto" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} required />
+                        <input type="number" placeholder="Precio Venta" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.precio} onChange={e => setForm({...form, precio: e.target.value})} required />
+                        <input type="number" placeholder="Stock Inicial" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} required />
+                        <button className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-xl">Agregar Stock</button>
+                    </form>
+                    <div className="space-y-3">
+                        {products.map(p => (
+                            <div key={p.id} className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                                <div><p className="font-bold">{p.nombre}</p><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Stock: {p.stock}</p></div>
+                                <p className="font-extrabold text-emerald-600">${p.precio}</p>
                             </div>
                         ))}
                     </div>
@@ -273,77 +266,48 @@
         function VentasView({ userId }) {
             const [clientes, setClientes] = useState([]);
             const [products, setProducts] = useState([]);
-            const [venta, setVenta] = useState({ 
-                clienteId: '', 
-                productoId: '', 
-                montoTotal: '', 
-                montoAbonado: '',
-                fechaEntrega: new Date().toISOString().split('T')[0],
-                fechaPago: ''
-            });
+            const [form, setForm] = useState({ clienteId: '', productoId: '', total: '', abono: '', fEntrega: '', fPago: '' });
             
-            const pathVentas = `/artifacts/${window.appId}/users/${userId}/ventas`;
-            const pathClientes = `/artifacts/${window.appId}/users/${userId}/clientes`;
-            const pathInventario = `/artifacts/${window.appId}/users/${userId}/inventario`;
-
             useEffect(() => {
-                const qC = window.fb.query(window.fb.collection(window.db, pathClientes), window.fb.orderBy('nombre'));
-                const unsubC = window.fb.onSnapshot(qC, (snap) => setClientes(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-                
-                const qI = window.fb.query(window.fb.collection(window.db, pathInventario), window.fb.orderBy('nombre'));
-                const unsubI = window.fb.onSnapshot(qI, (snap) => setProducts(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-                
-                return () => { unsubC(); unsubI(); };
+                const pC = `/artifacts/${window.appId}/users/${userId}/clientes`;
+                const pI = `/artifacts/${window.appId}/users/${userId}/inventario`;
+                window.fb.onSnapshot(window.fb.collection(window.db, pC), (s) => setClientes(s.docs.map(d => ({id: d.id, ...d.data()}))));
+                window.fb.onSnapshot(window.fb.collection(window.db, pI), (s) => setProducts(s.docs.map(d => ({id: d.id, ...d.data()}))));
             }, [userId]);
-
-            const handleProductChange = (e) => {
-                const prodId = e.target.value;
-                const selectedProd = products.find(p => p.id === prodId);
-                setVenta({
-                    ...venta,
-                    productoId: prodId,
-                    montoTotal: selectedProd ? selectedProd.precio : ''
-                });
-            };
 
             const handleVenta = async (e) => {
                 e.preventDefault();
-                const total = parseFloat(venta.montoTotal);
-                const abonado = parseFloat(venta.montoAbonado);
-                const pendiente = total - abonado;
-
-                await window.fb.addDoc(window.fb.collection(window.db, pathVentas), {
-                    ...venta,
-                    montoTotal: total,
-                    montoAbonado: abonado,
-                    montoPendiente: pendiente,
+                const path = `/artifacts/${window.appId}/users/${userId}/ventas`;
+                await window.fb.addDoc(window.fb.collection(window.db, path), {
+                    ...form,
+                    montoTotal: parseFloat(form.total),
+                    montoAbonado: parseFloat(form.abono),
+                    montoPendiente: parseFloat(form.total) - parseFloat(form.abono),
                     fecha: new Date().toISOString()
                 });
-                setVenta({ 
-                    clienteId: '', 
-                    productoId: '', 
-                    montoTotal: '', 
-                    montoAbonado: '',
-                    fechaEntrega: new Date().toISOString().split('T')[0],
-                    fechaPago: ''
-                });
-                alert("Venta y Abono registrados");
+                alert("Venta registrada con éxito");
+                setForm({ clienteId: '', productoId: '', total: '', abono: '', fEntrega: '', fPago: '' });
             };
 
             return (
-                <div className="animate-in slide-in-from-bottom-4 duration-500">
-                    <h2 className="text-2xl font-extrabold mb-6">Nueva Venta</h2>
+                <div>
+                    <h2 className="text-2xl font-black mb-6">Registrar Venta</h2>
                     <form onSubmit={handleVenta} className="bg-white p-6 rounded-[2rem] shadow-sm space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Seleccionar Cliente</label>
-                            <select className="w-full bg-slate-50 p-4 rounded-xl outline-none appearance-none" value={venta.clienteId} onChange={e => setVenta({...venta, clienteId: e.target.value})} required>
-                                <option value="">Elegir cliente...</option>
-                                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} ({c.codigo})</option>)}
-                            </select>
+                        <select className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.clienteId} onChange={e => setForm({...form, clienteId: e.target.value})} required>
+                            <option value="">Seleccionar Cliente</option>
+                            {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                        </select>
+                        <select className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.productoId} onChange={e => {
+                            const p = products.find(x => x.id === e.target.value);
+                            setForm({...form, productoId: e.target.value, total: p ? p.precio : ''});
+                        }} required>
+                            <option value="">Seleccionar Producto</option>
+                            {products.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                        </select>
+                        <div className="grid grid-cols-2 gap-3">
+                            <input type="number" placeholder="Monto Total" className="bg-slate-100 p-4 rounded-xl outline-none" value={form.total} readOnly />
+                            <input type="number" placeholder="Abono" className="bg-slate-50 p-4 rounded-xl outline-none border border-emerald-100" value={form.abono} onChange={e => setForm({...form, abono: e.target.value})} required />
                         </div>
-
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Seleccionar Producto</label>
-                            <select className="w-full bg-slate-50 p-4 rounded-xl outline-none appearance-none" value={venta.productoId} onChange={handleProductChange} required>
-                                <option value="">Seleccionar del Inventario...</option>
-                                {products.map(p => <option key={p.id
+                        <div className="grid grid-cols-2 gap-3 font-bold text-[10px] text-slate-400 uppercase tracking-widest">
+                            <div><label className="ml-2">Entrega</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl text-black mt-1" value={form.fEntrega} onChange={e => setForm({...form, fEntrega: e.target.value})} required /></div>
+                            <div><label className="ml-2">Fecha Pago</label><input type="date" cl
