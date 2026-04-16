@@ -45,16 +45,6 @@
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         
-        .badge-premium {
-            background: #FFD200;
-            box-shadow: 0 2px 5px rgba(255, 210, 0, 0.4);
-        }
-
-        .badge-new {
-            background: #FF5A5A;
-            color: white;
-        }
-
         .safe-area-bottom {
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -81,6 +71,7 @@
         window.db = getFirestore(app);
         window.auth = getAuth(app);
         window.fb = { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc };
+        window.appId = firebaseConfig.appId;
     </script>
 
     <script type="text/babel">
@@ -88,8 +79,6 @@
 
         function App() {
             const [user, setUser] = useState(null);
-            const [userPerms, setUserPerms] = useState(null);
-            const [ownerUid, setOwnerUid] = useState(null);
             const [view, setView] = useState('dashboard');
             const [email, setEmail] = useState('');
             const [password, setPassword] = useState('');
@@ -98,22 +87,6 @@
 
             useEffect(() => {
                 const unsub = window.fb.onAuthStateChanged(window.auth, async (u) => {
-                    if (u) {
-                        try {
-                            const q = window.fb.query(window.fb.collection(window.db, "partners"), window.fb.where("email", "==", u.email.toLowerCase().trim()));
-                            const querySnapshot = await window.fb.getDocs(q);
-                            if (!querySnapshot.empty) {
-                                const partnerData = querySnapshot.docs[0].data();
-                                setUserPerms(partnerData.permissions);
-                                setOwnerUid(partnerData.ownerUid);
-                                const firstAllowed = Object.keys(partnerData.permissions).find(k => partnerData.permissions[k]);
-                                if (firstAllowed) setView(firstAllowed);
-                            } else {
-                                setUserPerms(null);
-                                setOwnerUid(u.uid);
-                            }
-                        } catch (e) { setOwnerUid(u.uid); }
-                    }
                     setUser(u);
                     setLoading(false);
                 });
@@ -147,9 +120,19 @@
                         <form onSubmit={handleAuth} className="space-y-4">
                             <input type="email" placeholder="Correo" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
                             <input type="password" placeholder="Contraseña" className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={password} onChange={e => setPassword(e.target.value)} required />
-                            <button type="submit" className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-2xl shadow-lg mt-4 active:scale-95 transition-all">
-                                {isRegistering ? "Unirse ahora" : "Iniciar Sesión"}
-                            </button>
+                            <div className="flex gap-2 pt-4">
+                                <button type="submit" onClick={() => setIsRegistering(false)} className="flex-1 bg-black text-[#FFD200] font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
+                                    Entrar
+                                </button>
+                                <button type="submit" onClick={() => setIsRegistering(true)} className="flex-1 bg-slate-100 text-black font-bold py-4 rounded-2xl active:scale-95 transition-all">
+                                    Registrarse
+                                </button>
+                            </div>
+                            <div className="text-center mt-4 px-4">
+                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest bg-amber-50 py-2 rounded-full border border-amber-100">
+                                    <i className="fas fa-clock mr-1"></i> El período de prueba es por tiempo limitado
+                                </p>
+                            </div>
                         </form>
                     </div>
                 );
@@ -157,7 +140,6 @@
 
             return (
                 <div className="h-screen flex flex-col bg-[#FDFDFD] overflow-hidden">
-                    {/* Header Estilo App Referencia */}
                     <header className="header-yellow pt-14 pb-8 px-6 rounded-b-[2.5rem] shrink-0">
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-3">
@@ -165,36 +147,33 @@
                                     <i className="fas fa-user text-black text-sm"></i>
                                 </div>
                                 <div>
-                                    <h2 className="text-black font-extrabold text-lg leading-none">frau</h2>
+                                    <h2 className="text-black font-extrabold text-lg leading-none">{user.email.split('@')[0]}</h2>
                                     <p className="text-black/60 text-[10px] font-bold uppercase tracking-wider mt-1">Propietario</p>
                                 </div>
                             </div>
                             <div className="flex gap-3">
-                                <div className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center">
-                                    <i className="fas fa-question text-black text-sm"></i>
-                                </div>
-                                <div className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center relative">
-                                    <i className="fas fa-bell text-black text-sm"></i>
-                                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-yellow-400"></span>
-                                </div>
+                                <button onClick={() => window.fb.signOut(window.auth)} className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center">
+                                    <i className="fas fa-sign-out-alt text-black text-sm"></i>
+                                </button>
                             </div>
                         </div>
                     </header>
 
-                    {/* Contenido Principal */}
                     <main className="flex-1 overflow-y-auto px-6 py-6 pb-28 hide-scrollbar">
                         {view === 'dashboard' && <DashboardGrid setView={setView} />}
-                        {view === 'sales' && <SalesView uid={ownerUid} />}
-                        {view === 'inventory' && <InventoryView uid={ownerUid} />}
-                        {view === 'debts' && <DebtsView uid={ownerUid} />}
+                        {view === 'clientes' && <ClientesView userId={user.uid} />}
+                        {view === 'ventas' && <VentasView userId={user.uid} />}
+                        {view === 'estadisticas' && <EstadisticasView userId={user.uid} />}
+                        {view === 'inventory' && <InventoryView userId={user.uid} />}
+                        {view === 'egresos' && <EgresosView userId={user.uid} />}
+                        {view === 'creditos' && <CreditosView userId={user.uid} />}
                     </main>
 
-                    {/* Barra de Navegación Inferior */}
                     <nav className="bottom-nav fixed bottom-0 left-0 w-full h-20 px-10 flex justify-between items-center z-50 safe-area-bottom">
                         <NavButton active={view === 'dashboard'} icon="fa-house" label="Inicio" onClick={() => setView('dashboard')} />
-                        <NavButton active={view === 'sales'} icon="fa-chart-pie" label="Balance" onClick={() => setView('sales')} />
-                        <NavButton active={view === 'debts'} icon="fa-hand-holding-dollar" label="Deudas" onClick={() => setView('debts')} />
-                        <NavButton active={view === 'inventory'} icon="fa-box-archive" label="Inventario" onClick={() => setView('inventory')} />
+                        <NavButton active={view === 'ventas'} icon="fa-cart-shopping" label="Ventas" onClick={() => setView('ventas')} />
+                        <NavButton active={view === 'estadisticas'} icon="fa-chart-pie" label="Stats" onClick={() => setView('estadisticas')} />
+                        <NavButton active={view === 'inventory'} icon="fa-box-archive" label="Stock" onClick={() => setView('inventory')} />
                     </nav>
                 </div>
             );
@@ -214,24 +193,18 @@
                 <div className="animate-in fade-in duration-500">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-extrabold text-black">Servicios</h3>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ver todo</span>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4">
-                        <GridItem icon="fa-store" label="Catálogo" color="bg-blue-50" text="text-blue-500" badge="Nuevo" badgeType="new" />
-                        <GridItem icon="fa-file-invoice-dollar" label="Cotización" color="bg-orange-50" text="text-orange-500" />
-                        <GridItem icon="fa-hand-holding-heart" label="Deudas" color="bg-purple-50" text="text-purple-500" onClick={() => setView('debts')} />
+                        <GridItem icon="fa-users" label="Clientes" color="bg-rose-50" text="text-rose-500" onClick={() => setView('clientes')} />
+                        <GridItem icon="fa-cart-plus" label="Ventas" color="bg-emerald-50" text="text-emerald-500" onClick={() => setView('ventas')} />
+                        <GridItem icon="fa-chart-simple" label="Estadística" color="bg-blue-50" text="text-blue-500" onClick={() => setView('estadisticas')} />
                         
-                        <GridItem icon="fa-chart-simple" label="Estadística" color="bg-emerald-50" text="text-emerald-500" badge="★" badgeType="premium" />
-                        <GridItem icon="fa-users" label="Clientes" color="bg-rose-50" text="text-rose-500" />
-                        <GridItem icon="fa-truck-field" label="Proveedores" color="bg-amber-50" text="text-amber-500" />
-                        
-                        <GridItem icon="fa-user-tie" label="Empleados" color="bg-indigo-50" text="text-indigo-500" />
-                        <GridItem icon="fa-boxes-stacked" label="Inventario" color="bg-slate-50" text="text-slate-600" onClick={() => setView('inventory')} />
-                        <GridItem icon="fa-gear" label="Ajustes" color="bg-slate-50" text="text-slate-400" />
+                        <GridItem icon="fa-hand-holding-dollar" label="Créditos" color="bg-orange-50" text="text-orange-500" onClick={() => setView('creditos')} />
+                        <GridItem icon="fa-truck-field" label="Gastos" color="bg-red-50" text="text-red-500" onClick={() => setView('egresos')} />
+                        <GridItem icon="fa-box-archive" label="Inventario" color="bg-slate-50" text="text-slate-600" onClick={() => setView('inventory')} />
                     </div>
 
-                    {/* Banner Publicitario Estilo App */}
                     <div className="mt-8 bg-black rounded-[2rem] p-6 relative overflow-hidden">
                         <div className="relative z-10">
                             <h4 className="text-[#FFD200] font-extrabold text-lg">Eagle Mind Pro</h4>
@@ -244,14 +217,9 @@
             );
         }
 
-        function GridItem({ icon, label, color, text, badge, badgeType, onClick }) {
+        function GridItem({ icon, label, color, text, onClick }) {
             return (
                 <div onClick={onClick} className="grid-card p-4 flex flex-col items-center justify-center relative cursor-pointer">
-                    {badge && (
-                        <span className={`absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase ${badgeType === 'new' ? 'badge-new' : 'badge-premium text-black'}`}>
-                            {badge}
-                        </span>
-                    )}
                     <div className={`w-12 h-12 ${color} rounded-2xl flex items-center justify-center mb-3`}>
                         <i className={`fas ${icon} ${text} text-xl`}></i>
                     </div>
@@ -260,114 +228,122 @@
             );
         }
 
-        function SalesView({ uid }) {
-            const [products, setProducts] = useState([]);
-            const [sale, setSale] = useState({ client: '', product: '', qty: 1, type: 'contado' });
-            
-            useEffect(() => {
-                if(!uid) return;
-                const q = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
-                return window.fb.onSnapshot(q, (snap) => setProducts(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
-            }, [uid]);
+        function ClientesView({ userId }) {
+            const [clientes, setClientes] = useState([]);
+            const [form, setForm] = useState({ codigo: '', nombre: '', telefono: '' });
+            const path = `/artifacts/${window.appId}/users/${userId}/clientes`;
 
-            const register = async (e) => {
+            useEffect(() => {
+                const q = window.fb.query(window.fb.collection(window.db, path), window.fb.orderBy('nombre'));
+                return window.fb.onSnapshot(q, (snap) => setClientes(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+            }, [userId]);
+
+            const handleSubmit = async (e) => {
                 e.preventDefault();
-                const p = products.find(prod => prod.name === sale.product);
-                if (!p) return alert("Selecciona producto");
-                const total = p.price * sale.qty;
-                await window.fb.addDoc(window.fb.collection(window.db, "sales"), { ...sale, total, uid, at: window.fb.serverTimestamp() });
-                alert("Operación exitosa");
+                await window.fb.addDoc(window.fb.collection(window.db, path), form);
+                setForm({ codigo: '', nombre: '', telefono: '' });
+            };
+
+            return (
+                <div className="animate-in slide-in-from-right-4 duration-500">
+                    <h2 className="text-2xl font-extrabold mb-6">Gestión de Clientes</h2>
+                    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-[2rem] shadow-sm space-y-3 mb-6">
+                        <input placeholder="Código" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.codigo} onChange={e => setForm({...form, codigo: e.target.value})} required />
+                        <input placeholder="Nombre" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} required />
+                        <input placeholder="Teléfono" className="w-full bg-slate-50 p-4 rounded-xl outline-none" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})} required />
+                        <button className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-xl">Crear Cliente</button>
+                    </form>
+                    <div className="space-y-3">
+                        {clientes.map(c => (
+                            <div key={c.id} className="bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                                <div>
+                                    <p className="font-bold text-slate-900">{c.nombre}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Cód: {c.codigo} • {c.telefono}</p>
+                                </div>
+                                <div className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center">
+                                    <i className="fas fa-user text-slate-300 text-xs"></i>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function VentasView({ userId }) {
+            const [clientes, setClientes] = useState([]);
+            const [products, setProducts] = useState([]);
+            const [venta, setVenta] = useState({ 
+                clienteId: '', 
+                productoId: '', 
+                montoTotal: '', 
+                montoAbonado: '',
+                fechaEntrega: new Date().toISOString().split('T')[0],
+                fechaPago: ''
+            });
+            
+            const pathVentas = `/artifacts/${window.appId}/users/${userId}/ventas`;
+            const pathClientes = `/artifacts/${window.appId}/users/${userId}/clientes`;
+            const pathInventario = `/artifacts/${window.appId}/users/${userId}/inventario`;
+
+            useEffect(() => {
+                const qC = window.fb.query(window.fb.collection(window.db, pathClientes), window.fb.orderBy('nombre'));
+                const unsubC = window.fb.onSnapshot(qC, (snap) => setClientes(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+                
+                const qI = window.fb.query(window.fb.collection(window.db, pathInventario), window.fb.orderBy('nombre'));
+                const unsubI = window.fb.onSnapshot(qI, (snap) => setProducts(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+                
+                return () => { unsubC(); unsubI(); };
+            }, [userId]);
+
+            const handleProductChange = (e) => {
+                const prodId = e.target.value;
+                const selectedProd = products.find(p => p.id === prodId);
+                setVenta({
+                    ...venta,
+                    productoId: prodId,
+                    montoTotal: selectedProd ? selectedProd.precio : ''
+                });
+            };
+
+            const handleVenta = async (e) => {
+                e.preventDefault();
+                const total = parseFloat(venta.montoTotal);
+                const abonado = parseFloat(venta.montoAbonado);
+                const pendiente = total - abonado;
+
+                await window.fb.addDoc(window.fb.collection(window.db, pathVentas), {
+                    ...venta,
+                    montoTotal: total,
+                    montoAbonado: abonado,
+                    montoPendiente: pendiente,
+                    fecha: new Date().toISOString()
+                });
+                setVenta({ 
+                    clienteId: '', 
+                    productoId: '', 
+                    montoTotal: '', 
+                    montoAbonado: '',
+                    fechaEntrega: new Date().toISOString().split('T')[0],
+                    fechaPago: ''
+                });
+                alert("Venta y Abono registrados");
             };
 
             return (
                 <div className="animate-in slide-in-from-bottom-4 duration-500">
-                    <h2 className="text-2xl font-extrabold mb-6">Nuevo Movimiento</h2>
-                    <form onSubmit={register} className="bg-white p-6 rounded-[2rem] shadow-sm space-y-4">
+                    <h2 className="text-2xl font-extrabold mb-6">Nueva Venta</h2>
+                    <form onSubmit={handleVenta} className="bg-white p-6 rounded-[2rem] shadow-sm space-y-4">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Cliente</label>
-                            <input className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none" value={sale.client} onChange={e => setSale({...sale, client: e.target.value})} required />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Producto</label>
-                            <select className="w-full bg-slate-50 border-none p-4 rounded-2xl outline-none appearance-none" value={sale.product} onChange={e => setSale({...sale, product: e.target.value})} required>
-                                <option value="">Seleccionar...</option>
-                                {products.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Seleccionar Cliente</label>
+                            <select className="w-full bg-slate-50 p-4 rounded-xl outline-none appearance-none" value={venta.clienteId} onChange={e => setVenta({...venta, clienteId: e.target.value})} required>
+                                <option value="">Elegir cliente...</option>
+                                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} ({c.codigo})</option>)}
                             </select>
                         </div>
-                        <button className="w-full bg-black text-[#FFD200] font-bold py-4 rounded-2xl mt-4">Confirmar</button>
-                    </form>
-                </div>
-            );
-        }
 
-        function InventoryView({ uid }) {
-            const [items, setItems] = useState([]);
-            useEffect(() => {
-                if(!uid) return;
-                const q = window.fb.query(window.fb.collection(window.db, "inventory"), window.fb.where("uid", "==", uid));
-                return window.fb.onSnapshot(q, (snap) => setItems(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
-            }, [uid]);
-
-            return (
-                <div className="animate-in slide-in-from-right-4 duration-500">
-                    <h2 className="text-2xl font-extrabold mb-6">Inventario</h2>
-                    <div className="space-y-3">
-                        {items.map(item => (
-                            <div key={item.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm border border-slate-50">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center">
-                                        <i className="fas fa-box text-slate-400"></i>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900">{item.name}</h4>
-                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-tighter">Stock: {item.qty} un.</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-black font-extrabold">${item.price}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        function DebtsView({ uid }) {
-            const [debts, setDebts] = useState([]);
-            useEffect(() => {
-                if(!uid) return;
-                const q = window.fb.query(window.fb.collection(window.db, "debts"), window.fb.where("uid", "==", uid));
-                return window.fb.onSnapshot(q, (snap) => setDebts(snap.docs.map(doc => ({id: doc.id, ...doc.data()}))));
-            }, [uid]);
-
-            return (
-                <div className="animate-in slide-in-from-left-4 duration-500">
-                    <h2 className="text-2xl font-extrabold mb-6">Cobros pendientes</h2>
-                    <div className="space-y-3">
-                        {debts.map(d => (
-                            <div key={d.id} className="bg-white p-4 rounded-3xl flex justify-between items-center shadow-sm">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400">
-                                        <i className="fas fa-clock"></i>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900">{d.client}</h4>
-                                        <p className="text-rose-400 text-[10px] font-bold uppercase tracking-tighter">{d.product}</p>
-                                    </div>
-                                </div>
-                                <div className="text-rose-500 font-extrabold">${d.amount}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
-
-```
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Seleccionar Producto</label>
+                            <select className="w-full bg-slate-50 p-4 rounded-xl outline-none appearance-none" value={venta.productoId} onChange={handleProductChange} required>
+                                <option value="">Seleccionar del Inventario...</option>
+                                {products.map(p => <option key={p.id
