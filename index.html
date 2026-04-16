@@ -1,27 +1,154 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eagle Mind Pro</title>
+    <title>Eagle Mind - Gestión Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; margin: 0; padding: 0; }
-        .header-yellow { background: linear-gradient(135deg, #FFD200 0%, #F5C300 100%); }
-        .btn-black { background-color: #000000; color: #FFD200; border-radius: 1rem; transition: all 0.2s; }
-        .card { background: white; border-radius: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .nav-fixed { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); border-top: 1px solid #E2E8F0; z-index: 100; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #FFD200;
+            --secondary: #000000;
+            --bg: #F8F9FA;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 0; 
+            color: #1A1A1A; 
+            overflow-x: hidden; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .header-gradient { 
+            background: linear-gradient(135deg, #FFD200 0%, #F5C300 100%); 
+            border-radius: 0 0 40px 40px; 
+            box-shadow: 0 10px 30px rgba(245, 195, 0, 0.15); 
+        }
+
+        .app-card { 
+            background: white; 
+            border-radius: 28px; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            border: 1px solid rgba(0,0,0,0.03); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.02); 
+            aspect-ratio: 1/1; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            cursor: pointer; 
+        }
+
+        .app-card:active { transform: scale(0.92); background-color: #f0f0f0; }
+
+        .nav-bar { 
+            position: fixed; 
+            bottom: 24px; 
+            left: 24px; 
+            right: 24px; 
+            height: 76px; 
+            background: #000; 
+            border-radius: 28px; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            z-index: 1000; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal { 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(0,0,0,0.6); 
+            backdrop-filter: blur(8px); 
+            display: flex; 
+            align-items: flex-end; 
+            z-index: 2000; 
+        }
+
+        .modal-content { 
+            background: white; 
+            width: 100%; 
+            border-radius: 40px 40px 0 0; 
+            padding: 32px 24px; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            padding-bottom: 60px; 
+        }
+
+        .input-group { 
+            background: #F1F3F5; 
+            border-radius: 20px; 
+            padding: 16px 20px; 
+            margin-bottom: 16px; 
+            width: 100%; 
+            border: 2px solid transparent; 
+            font-size: 16px; 
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .input-group:focus { 
+            border-color: var(--primary); 
+            background: white; 
+            outline: none; 
+            box-shadow: 0 0 0 4px rgba(255, 210, 0, 0.1);
+        }
+
+        .btn-yellow { 
+            background: var(--primary); 
+            color: black; 
+            font-weight: 800; 
+            border-radius: 20px; 
+            padding: 18px; 
+            width: 100%; 
+            transition: all 0.2s; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 8px 20px rgba(255, 210, 0, 0.2);
+        }
+
+        .btn-yellow:active { transform: scale(0.98); opacity: 0.9; }
+
+        .list-item { 
+            background: #F8F9FA; 
+            border-radius: 20px; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border: 1px solid #EEF2F6; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @keyframes slideUp { 
+            from { transform: translateY(100%); } 
+            to { transform: translateY(0); } 
+        }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div id="app"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, increment, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyCrjjeOoXPOtJDXDfrHLOA4Ny0QW2zfVWk",
             authDomain: "apps-d45d6.firebaseapp.com",
@@ -34,60 +161,398 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const appId = "eagle-mind-final";
+        const ADMIN_EMAIL = "eaglemind529@gmail.com"; // En minúsculas para comparar siempre igual
 
-        let state = { user: null, view: 'dashboard', loading: true };
+        // Estado Global
+        let state = {
+            user: null,
+            userData: null,
+            loading: true,
+            items: [],
+            sales: [],
+            clients: [],
+            expenses: [],
+            allUsers: [],
+            activeModal: null
+        };
+
+        let unsubscribes = [];
+
+        // Función para cargar datos desde Firebase
+        const fetchData = (userId) => {
+            unsubscribes.forEach(unsub => unsub());
+            unsubscribes = [];
+
+            const userPath = (col) => collection(db, 'artifacts', appId, 'users', userId, col);
+            
+            // Items (Inventario)
+            unsubscribes.push(onSnapshot(query(userPath("items"), orderBy("name")), (snap) => {
+                state.items = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                render();
+            }));
+
+            // Clientes
+            unsubscribes.push(onSnapshot(query(userPath("clients"), orderBy("name")), (snap) => {
+                state.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                render();
+            }));
+
+            // Ventas
+            unsubscribes.push(onSnapshot(query(userPath("sales"), orderBy("date", "desc")), (snap) => {
+                state.sales = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                render();
+            }));
+
+            // Gastos
+            unsubscribes.push(onSnapshot(query(userPath("expenses"), orderBy("date", "desc")), (snap) => {
+                state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                render();
+            }));
+            
+            // Si es ADMIN, cargar lista de usuarios para aprobaciones
+            if(auth.currentUser.email.toLowerCase() === ADMIN_EMAIL) {
+                unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => {
+                    state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    render();
+                }));
+            }
+        };
+
+        // --- FUNCIONES DE NEGOCIO ---
+
+        window.handleVenta = async () => {
+            const itemId = document.getElementById('vItem').value;
+            const qty = Number(document.getElementById('vQty').value);
+            const type = document.getElementById('vType').value;
+            const clientId = type === 'credito' ? document.getElementById('vClient').value : null;
+
+            if(!itemId || qty <= 0) return alert("Datos inválidos");
+
+            const item = state.items.find(i => i.id === itemId);
+            if(item.stock < qty) return alert("No hay suficiente stock");
+
+            const total = item.price * qty;
+
+            try {
+                const userRef = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
+                const docRef = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
+
+                await addDoc(userRef("sales"), {
+                    itemId, itemName: item.name, qty, total, type, clientId, 
+                    date: new Date().toISOString()
+                });
+
+                await updateDoc(docRef("items", itemId), { stock: increment(-qty) });
+
+                if(type === 'credito' && clientId) {
+                    await updateDoc(docRef("clients", clientId), { debt: increment(total) });
+                }
+
+                state.activeModal = null;
+                render();
+            } catch (e) { alert("Error al procesar venta"); }
+        };
+
+        window.addItem = async () => {
+            const name = document.getElementById('nItem').value.trim();
+            const price = Number(document.getElementById('nPrice').value);
+            const stock = Number(document.getElementById('nStock').value);
+            if(!name || price <= 0) return alert("Revisa los datos");
+
+            await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items"), { name, price, stock });
+            state.activeModal = null;
+        };
+
+        window.addClient = async () => {
+            const name = document.getElementById('cn').value.trim();
+            if(!name) return;
+            await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients"), { name, debt: 0 });
+            state.activeModal = null;
+        };
+
+        window.addExpense = async () => {
+            const desc = document.getElementById('eDesc').value.trim();
+            const amount = Number(document.getElementById('eAmt').value);
+            if(!desc || amount <= 0) return;
+            await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "expenses"), { desc, amount, date: new Date().toISOString() });
+            state.activeModal = null;
+        };
+
+        window.toggleUserStatus = async (uid, currentStatus) => {
+            await updateDoc(doc(db, 'artifacts', appId, 'users', uid), { approved: !currentStatus });
+        };
+
+        window.logout = () => signOut(auth);
+        window.setModal = (m) => { state.activeModal = m; render(); };
+
+        // --- RENDERIZADO DE INTERFAZ ---
 
         function render() {
             const root = document.getElementById('app');
-            if (state.loading) { root.innerHTML = `<div class="h-screen flex items-center justify-center font-bold text-slate-400">Iniciando...</div>`; return; }
+            if (state.loading) {
+                root.innerHTML = `<div class="h-screen flex items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500"></div></div>`;
+                return;
+            }
+
             if (!state.user) { renderLogin(root); return; }
-            renderApp(root);
+
+            const isAdm = state.user.email.toLowerCase() === ADMIN_EMAIL;
+
+            if (state.userData && !state.userData.approved && !isAdm) {
+                root.innerHTML = `
+                <div class="h-screen flex flex-col items-center justify-center px-10 text-center bg-white">
+                    <div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mb-8"><i class="fas fa-lock text-amber-500 text-4xl"></i></div>
+                    <h2 class="text-3xl font-black mb-4 uppercase tracking-tighter">Acceso Restringido</h2>
+                    <p class="text-slate-400 text-base leading-relaxed">Tu cuenta <b>${state.user.email}</b> está en lista de espera. El administrador debe aprobarte para entrar.</p>
+                    <button onclick="window.logout()" class="btn-yellow mt-10">Cerrar Sesión</button>
+                </div>`;
+                return;
+            }
+
+            const caja = calcularCaja();
+
+            root.innerHTML = `
+            <div class="pb-36">
+                <header class="header-gradient pt-16 pb-12 px-8 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-black font-black text-3xl uppercase tracking-tighter leading-none">EXITO</h2>
+                        <p class="text-black/50 text-[11px] font-bold tracking-[0.2em] uppercase mt-2">Business Management</p>
+                    </div>
+                    <button onclick="window.logout()" class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-transform"><i class="fas fa-power-off text-white text-lg"></i></button>
+                </header>
+
+                <div class="px-6 -mt-10">
+                    <div class="bg-black rounded-[35px] p-8 shadow-2xl flex justify-between items-center text-white relative overflow-hidden">
+                        <div class="relative z-10">
+                            <p class="text-white/40 text-[11px] font-bold uppercase tracking-widest">Efectivo Disponible</p>
+                            <h3 class="text-white text-3xl font-black mt-2 tracking-tighter">$ ${caja}</h3>
+                        </div>
+                        <div class="w-16 h-16 bg-[#FFD200] rounded-3xl flex items-center justify-center shadow-2xl relative z-10"><i class="fas fa-wallet text-black text-2xl"></i></div>
+                        <div class="absolute -right-4 -bottom-4 w-32 h-32 bg-white/5 rounded-full"></div>
+                    </div>
+                </div>
+
+                <main class="p-6 grid grid-cols-3 gap-5 mt-4">
+                    <div onclick="window.setModal('venta')" class="app-card"><i class="fas fa-cart-plus text-blue-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase tracking-tight">Venta</p></div>
+                    <div onclick="window.setModal('inventario')" class="app-card"><i class="fas fa-box-open text-emerald-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase tracking-tight">Stock</p></div>
+                    <div onclick="window.setModal('clientes')" class="app-card"><i class="fas fa-user-tag text-rose-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase tracking-tight">Clientes</p></div>
+                    <div onclick="window.setModal('egresos')" class="app-card"><i class="fas fa-receipt text-orange-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase tracking-tight">Gastos</p></div>
+                    <div onclick="window.setModal('historial')" class="app-card"><i class="fas fa-list-ul text-purple-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase tracking-tight">Historial</p></div>
+                    <div onclick="window.setModal('deudas')" class="app-card"><i class="fas fa-money-bill-transfer text-amber-600 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase tracking-tight">Cobros</p></div>
+                    
+                    ${isAdm ? `
+                        <div onclick="window.setModal('admin')" class="app-card bg-slate-900 border-none text-white col-span-3 aspect-auto py-5 flex-row gap-4">
+                            <i class="fas fa-user-shield text-[#FFD200] text-xl"></i>
+                            <p class="text-[11px] font-black tracking-widest uppercase">Panel de Control de Accesos</p>
+                        </div>
+                    ` : ''}
+                </main>
+
+                <nav class="nav-bar">
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-[#FFD200]"><i class="fas fa-home text-xl"></i></div>
+                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-chart-pie text-xl"></i></div>
+                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-cog text-xl"></i></div>
+                </nav>
+            </div>
+            ${state.activeModal ? renderModal() : ''}`;
+        }
+
+        function calcularCaja() {
+            const v = state.sales.filter(s => s.type === 'contado').reduce((acc, s) => acc + Number(s.total), 0);
+            const e = state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
+            return (v - e).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+
+        function renderModal() {
+            const m = state.activeModal;
+            let html = '';
+
+            if(m === 'venta') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Registrar Venta</h2>
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Producto</label>
+                <select id="vItem" class="input-group">
+                    ${state.items.map(i => `<option value="${i.id}">${i.name} ($${i.price}) - Stock: ${i.stock}</option>`)}
+                </select>
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Cantidad</label>
+                <input id="vQty" type="number" class="input-group" value="1">
+                <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Método de Pago</label>
+                <select id="vType" class="input-group" onchange="document.getElementById('divClient').style.display = this.value === 'credito' ? 'block' : 'none'">
+                    <option value="contado">💵 Efectivo / Contado</option>
+                    <option value="credito">⏳ Crédito / Deuda</option>
+                </select>
+                <div id="divClient" style="display:none">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">Seleccionar Cliente</label>
+                    <select id="vClient" class="input-group">
+                        ${state.clients.map(c => `<option value="${c.id}">${c.name}</option>`)}
+                    </select>
+                </div>
+                <button onclick="window.handleVenta()" class="btn-yellow mt-4">Confirmar Venta</button>`;
+            } 
+            else if(m === 'inventario') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Inventario</h2>
+                <div class="space-y-3 mb-8 max-h-60 overflow-y-auto pr-2">
+                    ${state.items.map(i => `
+                        <div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <span class="font-bold text-slate-700">${i.name}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] font-bold text-slate-400">$${i.price}</span>
+                                <span class="px-3 py-1 ${i.stock < 5 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'} rounded-lg text-xs font-black">${i.stock} ud</span>
+                            </div>
+                        </div>`).join('')}
+                </div>
+                <h3 class="text-sm font-black uppercase mb-4 text-slate-400">Nuevo Producto</h3>
+                <input id="nItem" type="text" placeholder="Nombre del producto" class="input-group">
+                <div class="flex gap-4">
+                    <input id="nPrice" type="number" placeholder="Precio" class="input-group">
+                    <input id="nStock" type="number" placeholder="Stock inicial" class="input-group">
+                </div>
+                <button onclick="window.addItem()" class="btn-yellow">Agregar al Stock</button>`;
+            }
+            else if(m === 'admin') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Control de Accesos</h2>
+                <p class="text-xs text-slate-400 mb-6 font-medium">Aprueba o bloquea usuarios registrados.</p>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    ${state.allUsers.map(u => `
+                        <div class="list-item">
+                            <div class="overflow-hidden">
+                                <p class="text-xs font-black truncate text-slate-800">${u.email}</p>
+                                <p class="text-[9px] font-bold ${u.approved ? 'text-emerald-500' : 'text-amber-500'} uppercase mt-1">
+                                    <i class="fas ${u.approved ? 'fa-check-circle' : 'fa-hourglass-half'} mr-1"></i> ${u.approved ? 'Autorizado' : 'Pendiente'}
+                                </p>
+                            </div>
+                            <button onclick="window.toggleUserStatus('${u.id}', ${u.approved})" 
+                                class="ml-4 px-4 py-2 ${u.approved ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} rounded-xl text-[10px] font-black uppercase transition-colors active:scale-95">
+                                ${u.approved ? 'Bloquear' : 'Aprobar'}
+                            </button>
+                        </div>`).join('')}
+                </div>`;
+            }
+            else if(m === 'clientes') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Directorio Clientes</h2>
+                <div class="space-y-3 mb-8">
+                    ${state.clients.map(c => `
+                        <div class="list-item">
+                            <span class="font-bold text-slate-700">${c.name}</span>
+                            <span class="text-rose-600 font-black tracking-tighter">$ ${c.debt.toFixed(2)}</span>
+                        </div>`).join('')}
+                </div>
+                <input id="cn" type="text" placeholder="Nombre del nuevo cliente" class="input-group">
+                <button onclick="window.addClient()" class="btn-yellow">Registrar Cliente</button>`;
+            }
+            else if(m === 'egresos') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Registrar Gasto</h2>
+                <input id="eDesc" type="text" placeholder="¿En qué se gastó?" class="input-group">
+                <input id="eAmt" type="number" placeholder="Monto $" class="input-group">
+                <button onclick="window.addExpense()" class="btn-yellow">Guardar Egreso</button>`;
+            }
+            else if(m === 'historial') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Historial Ventas</h2>
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    ${state.sales.map(s => `
+                        <div class="list-item">
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">${s.itemName}</p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">${new Date(s.date).toLocaleDateString()} - ${s.type}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-emerald-600 font-black">$${s.total.toFixed(2)}</p>
+                                <p class="text-[9px] text-slate-400 font-bold">${s.qty} uds</p>
+                            </div>
+                        </div>`).join('')}
+                </div>`;
+            }
+            else if(m === 'deudas') {
+                html = `
+                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Cobros Pendientes</h2>
+                <div class="space-y-3">
+                    ${state.clients.filter(c => c.debt > 0).map(c => `
+                        <div class="list-item">
+                            <span class="font-bold text-slate-700">${c.name}</span>
+                            <div class="text-right">
+                                <p class="text-rose-600 font-black">$ ${c.debt.toFixed(2)}</p>
+                                <button class="text-[8px] font-black uppercase text-blue-500 mt-1">Saldar Deuda</button>
+                            </div>
+                        </div>`).join('')}
+                </div>`;
+            }
+
+            return `
+            <div class="modal" onclick="if(event.target === this) window.setModal(null)">
+                <div class="modal-content animate-slide-up">
+                    <div class="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" onclick="window.setModal(null)"></div>
+                    ${html}
+                    <button onclick="window.setModal(null)" class="w-full mt-8 text-slate-300 font-black uppercase text-[11px] tracking-[0.2em]">Cerrar Panel</button>
+                </div>
+            </div>`;
         }
 
         function renderLogin(root) {
-            root.innerHTML = `<div class="h-screen bg-white p-8 flex flex-col justify-center text-center">
-                <div class="w-20 h-20 header-yellow rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg"><i class="fas fa-eagle text-3xl"></i></div>
-                <h1 class="text-3xl font-extrabold mb-8">Eagle Mind</h1>
-                <div class="space-y-4">
-                    <input id="email" type="email" placeholder="Correo" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border" />
-                    <input id="pass" type="password" placeholder="Contraseña" class="w-full p-4 bg-slate-50 rounded-2xl outline-none border" />
-                    <button id="doLogin" class="w-full btn-black font-bold py-4">Entrar</button>
-                </div>
-            </div>`;
-            document.getElementById('doLogin').onclick = async () => {
-                try { await signInWithEmailAndPassword(auth, document.getElementById('email').value, document.getElementById('pass').value); } 
-                catch (err) { alert("Error al entrar"); }
-            };
-        }
-
-        function renderApp(root) {
             root.innerHTML = `
-                <div class="min-h-screen pb-24">
-                    <header class="header-yellow pt-14 pb-8 px-6 rounded-b-[2.5rem] flex justify-between items-center">
-                        <h2 class="font-extrabold text-lg">${state.user.email.split('@')[0]}</h2>
-                        <button id="logout" class="w-10 h-10 bg-black/10 rounded-xl"><i class="fas fa-sign-out-alt"></i></button>
-                    </header>
-                    <main class="p-6">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="card p-6 text-center border border-slate-50">
-                                <i class="fas fa-users text-rose-500 mb-2"></i><p class="text-xs font-bold">CLIENTES</p>
-                            </div>
-                            <div class="card p-6 text-center border border-slate-50">
-                                <i class="fas fa-boxes-stacked text-blue-500 mb-2"></i><p class="text-xs font-bold">STOCK</p>
-                            </div>
-                        </div>
-                    </main>
-                    <nav class="nav-fixed flex justify-around items-center">
-                        <i class="fas fa-house text-xl text-black"></i>
-                        <i class="fas fa-users text-xl text-slate-300"></i>
-                        <i class="fas fa-box text-xl text-slate-300"></i>
-                    </nav>
+            <div class="h-screen flex flex-col justify-center px-10 bg-white">
+                <div class="w-24 h-24 header-gradient rounded-[32px] mx-auto mb-8 flex items-center justify-center shadow-2xl rotate-3"><i class="fas fa-eagle text-black text-4xl"></i></div>
+                <h1 class="text-4xl font-black text-center mb-2 tracking-tighter italic">Eagle Mind</h1>
+                <p class="text-center text-slate-400 text-[11px] font-bold uppercase tracking-[0.3em] mb-12">Private Edition Pro</p>
+                
+                <div class="space-y-2">
+                    <input id="email" type="email" placeholder="Correo electrónico" class="input-group">
+                    <input id="pass" type="password" placeholder="Tu contraseña" class="input-group">
                 </div>
-            `;
-            document.getElementById('logout').onclick = () => signOut(auth);
+                
+                <button id="btnLogin" onclick="window.handleLogin()" class="btn-yellow mt-6">Acceder al Sistema</button>
+                
+                <div class="relative flex py-10 items-center">
+                    <div class="flex-grow border-t border-slate-100"></div>
+                    <span class="mx-4 text-slate-300 text-[10px] font-bold tracking-widest uppercase">Nuevos Usuarios</span>
+                    <div class="flex-grow border-t border-slate-100"></div>
+                </div>
+                
+                <button id="btnReg" onclick="window.handleRegister()" class="w-full py-5 border-2 border-slate-100 rounded-[22px] text-slate-400 font-black text-[11px] uppercase tracking-[0.2em] active:bg-slate-50 transition-colors">Solicitar Acceso</button>
+            </div>`;
         }
 
-        onAuthStateChanged(auth, (u) => { state.user = u; state.loading = false; render(); });
+        window.handleLogin = async () => {
+            const email = document.getElementById('email').value.trim();
+            const pass = document.getElementById('pass').value;
+            if(!email || !pass) return;
+            document.getElementById('btnLogin').innerText = "AUTENTICANDO...";
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch(err) { alert("Usuario o contraseña incorrectos"); document.getElementById('btnLogin').innerText = "ACCEDER AL SISTEMA"; }
+        };
+
+        window.handleRegister = async () => {
+            const email = document.getElementById('email').value.trim();
+            const pass = document.getElementById('pass').value;
+            if(!email || pass.length < 6) return alert("Email válido y clave de min 6 caracteres");
+            document.getElementById('btnReg').innerText = "PROCESANDO...";
+            try { 
+                const res = await createUserWithEmailAndPassword(auth, email, pass);
+                const isAdm = email.toLowerCase() === ADMIN_EMAIL;
+                await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid), { email, approved: isAdm });
+                alert(isAdm ? "¡Admin registrado!" : "Solicitud enviada. Contacta al admin para aprobación.");
+            } catch(err) { alert("Error al registrar: " + err.message); document.getElementById('btnReg').innerText = "SOLICITAR ACCESO"; }
+        };
+
+        // Escuchar cambios de autenticación
+        onAuthStateChanged(auth, async (u) => { 
+            state.user = u; 
+            if(u) {
+                const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', u.uid));
+                state.userData = userDoc.exists() ? userDoc.data() : null;
+                fetchData(u.uid);
+            } else {
+                state.loading = false;
+                render();
+            }
+        });
     </script>
 </body>
 </html>
+
+```
