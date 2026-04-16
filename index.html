@@ -5,14 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Eagle Mind - Mobile Pro</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Scripts con crossorigin obligatorio para evitar pantalla blanca en móviles -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #FDFDFD; 
@@ -20,7 +22,6 @@
             margin: 0;
             overscroll-behavior-y: contain;
         }
-
         .header-yellow { background-color: #FFD200; }
         .grid-card { background: white; border-radius: 1.5rem; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
         .grid-card:active { transform: scale(0.92); background-color: #F8F8F8; }
@@ -33,7 +34,7 @@
 <body>
     <div id="root"></div>
 
-    <!-- Firebase SDK Setup -->
+    <!-- Firebase SDK con importaciones directas -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -55,7 +56,7 @@
         window.appId = firebaseConfig.appId;
     </script>
 
-    <!-- React App -->
+    <!-- Lógica de React con manejo de errores de carga -->
     <script type="text/babel">
         const { useState, useEffect } = React;
 
@@ -75,7 +76,7 @@
                             setLoading(false);
                         });
                     }
-                    setTimeout(init, 200);
+                    setTimeout(init, 500); // Espera un poco más para asegurar carga en móvil
                 };
                 init();
             }, []);
@@ -85,20 +86,22 @@
                 try {
                     if (isRegistering) await window.fb.createUserWithEmailAndPassword(window.auth, email, password);
                     else await window.fb.signInWithEmailAndPassword(window.auth, email, password);
-                } catch (err) { alert("Error: " + err.message); }
+                } catch (err) { 
+                    alert("Error: " + err.message); 
+                }
             };
 
             if (loading) return (
-                <div className="h-screen flex items-center justify-center bg-white font-bold">
+                <div className="h-screen flex items-center justify-center bg-white font-bold text-slate-900">
                     <div className="text-center">
                         <div className="w-12 h-12 border-4 border-[#FFD200] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <p>Cargando Eagle Mind...</p>
+                        <p>Iniciando Eagle Mind...</p>
                     </div>
                 </div>
             );
 
             if (!user) return (
-                <div className="h-screen bg-white p-10 flex flex-col justify-center">
+                <div className="h-screen bg-white p-10 flex flex-col justify-center animate-fade">
                     <div className="text-center mb-12">
                         <div className="w-20 h-20 header-yellow rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-yellow-200">
                             <i className="fas fa-eagle text-3xl text-black"></i>
@@ -117,8 +120,9 @@
                 </div>
             );
 
+            // Resto del código se mantiene igual pero dentro de un contenedor seguro
             return (
-                <div className="h-screen flex flex-col bg-[#FDFDFD] overflow-hidden">
+                <div className="h-screen flex flex-col bg-[#FDFDFD] overflow-hidden animate-fade">
                     <header className="header-yellow pt-14 pb-8 px-6 rounded-b-[2.5rem] shrink-0">
                         <div className="flex justify-between items-center">
                             <div className="flex items-center gap-3">
@@ -136,7 +140,7 @@
                         </div>
                     </header>
 
-                    <main className="flex-1 overflow-y-auto px-6 py-6 pb-28 hide-scrollbar animate-fade">
+                    <main className="flex-1 overflow-y-auto px-6 py-6 pb-28 hide-scrollbar">
                         {view === 'dashboard' && <DashboardGrid setView={setView} />}
                         {view === 'clientes' && <ClientesView userId={user.uid} />}
                         {view === 'ventas' && <VentasView userId={user.uid} />}
@@ -156,6 +160,7 @@
             );
         }
 
+        // --- SUBCOMPONENTE BOTON NAVEGACION ---
         function NavButton({ icon, label, active, onClick }) {
             return (
                 <button onClick={onClick} className={`flex flex-col items-center gap-1.5 ${active ? 'text-black' : 'text-slate-300'}`}>
@@ -165,6 +170,7 @@
             );
         }
 
+        // --- SUBCOMPONENTE GRID DASHBOARD ---
         function DashboardGrid({ setView }) {
             return (
                 <div className="grid grid-cols-3 gap-4">
@@ -189,6 +195,7 @@
             );
         }
 
+        // --- VISTA CLIENTES ---
         function ClientesView({ userId }) {
             const [clientes, setClientes] = useState([]);
             const [form, setForm] = useState({ codigo: '', nombre: '', telefono: '' });
@@ -226,6 +233,7 @@
             );
         }
 
+        // --- VISTA INVENTARIO ---
         function InventoryView({ userId }) {
             const [products, setProducts] = useState([]);
             const [form, setForm] = useState({ nombre: '', precio: '', stock: '' });
@@ -263,6 +271,7 @@
             );
         }
 
+        // --- VISTA VENTAS ---
         function VentasView({ userId }) {
             const [clientes, setClientes] = useState([]);
             const [products, setProducts] = useState([]);
@@ -306,8 +315,4 @@
                         </select>
                         <div className="grid grid-cols-2 gap-3">
                             <input type="number" placeholder="Monto Total" className="bg-slate-100 p-4 rounded-xl outline-none" value={form.total} readOnly />
-                            <input type="number" placeholder="Abono" className="bg-slate-50 p-4 rounded-xl outline-none border border-emerald-100" value={form.abono} onChange={e => setForm({...form, abono: e.target.value})} required />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 font-bold text-[10px] text-slate-400 uppercase tracking-widest">
-                            <div><label className="ml-2">Entrega</label><input type="date" className="w-full bg-slate-50 p-4 rounded-xl text-black mt-1" value={form.fEntrega} onChange={e => setForm({...form, fEntrega: e.target.value})} required /></div>
-                            <div><label className="ml-2">Fecha Pago</label><input type="date" cl
+                            <input type="number" placeholder="Abono" className="bg-slate-50 p-4 rounded-xl outline-none border border-emerald-100" value={form.
