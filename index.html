@@ -22,7 +22,7 @@
         .btn-yellow { background: var(--primary); color: black; font-weight: 800; border-radius: 20px; padding: 18px; width: 100%; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(255, 210, 0, 0.2); }
         .list-item { background: #F8F9FA; border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid #EEF2F6; display: flex; justify-content: space-between; align-items: center; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-slide-up { animation: slideUp(0.4s cubic-bezier(0.16, 1, 0.3, 1)); }
         
         .carousel-container { display: flex; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 200%; }
         .carousel-item { width: 50%; flex-shrink: 0; }
@@ -57,7 +57,8 @@
             items: [], sales: [], clients: [], expenses: [],
             allUsers: [], activeModal: null,
             carouselIndex: 0,
-            editingClientId: null
+            editingClientId: null,
+            payingClientId: null
         };
 
         let unsubscribes = [];
@@ -71,7 +72,7 @@
             unsubscribes.push(onSnapshot(userPath("items"), (snap) => {
                 state.items = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 render();
-            }, (err) => console.log("Error items:", err)));
+            }));
 
             unsubscribes.push(onSnapshot(userPath("clients"), (snap) => {
                 state.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
@@ -135,36 +136,27 @@
             const name = document.getElementById('cn').value.trim();
             const code = document.getElementById('cc').value.trim();
             const phone = document.getElementById('cp').value.trim();
-            
             if(!name || !code) return alert("Nombre y Código son obligatorios");
-            
             const clientData = { name, code, phone };
-
             try {
                 if(state.editingClientId) {
-                    // Acción de Actualizar
                     await updateDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", state.editingClientId), clientData);
                     state.editingClientId = null;
                 } else {
-                    // Acción de Crear Nuevo
                     await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients"), { ...clientData, debt: 0 });
                 }
                 state.activeModal = null;
                 render();
-            } catch (e) {
-                alert("Error al procesar cliente");
-            }
+            } catch (e) { alert("Error al procesar cliente"); }
         };
 
         window.editClient = (id) => {
             const client = state.clients.find(c => c.id === id);
             if(client) {
                 state.editingClientId = id;
-                // Llenamos los campos del formulario con los datos actuales
                 document.getElementById('cn').value = client.name;
                 document.getElementById('cc').value = client.code;
                 document.getElementById('cp').value = client.phone || '';
-                // Cambiamos el texto del botón para feedback visual
                 document.getElementById('btnClientAction').innerText = "Actualizar Cliente";
             }
         };
@@ -181,6 +173,49 @@
             if(!desc || amount <= 0) return;
             await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "expenses"), { desc, amount, date: new Date().toISOString() });
             state.activeModal = null;
+        };
+
+        window.handleAbono = async (clientIdFromBtn) => {
+            // Si clientIdFromBtn existe, es la versión de "abono rápido" con input en la lista
+            const targetId = clientIdFromBtn || state.payingClientId;
+            const amountInput = document.getElementById(clientIdFromBtn ? `input-abono-${clientIdFromBtn}` : 'aAmt');
+            
+            if(!amountInput) return;
+            const amount = parseFloat(amountInput.value);
+            
+            if(!amount || amount <= 0 || isNaN(amount)) return alert("Ingrese un monto válido");
+            if(!targetId) return alert("Error de sesión de cobro");
+
+            const client = state.clients.find(c => c.id === targetId);
+            if(!client) return alert("Cliente no encontrado");
+            if(amount > (client.debt + 0.01)) return alert("El abono no puede superar la deuda");
+
+            try {
+                const userPath = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
+                const docPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
+
+                // Descontar deuda
+                await updateDoc(docPath("clients", targetId), { 
+                    debt: increment(-amount) 
+                });
+
+                // Registrar en historial como ingreso
+                await addDoc(userPath("sales"), {
+                    itemId: "ABONO",
+                    itemName: `Abono: ${client.name}`,
+                    qty: 1,
+                    total: amount,
+                    type: 'contado',
+                    date: new Date().toISOString()
+                });
+
+                state.payingClientId = null;
+                state.activeModal = null;
+                render();
+            } catch (e) {
+                console.error(e);
+                alert("Error al procesar abono");
+            }
         };
 
         window.toggleUserStatus = async (uid, currentStatus) => {
@@ -200,6 +235,7 @@
         window.setModal = (m) => { 
             state.activeModal = m; 
             if(m !== 'clientes') state.editingClientId = null;
+            if(m !== 'deudas') state.payingClientId = null;
             render(); 
         };
 
@@ -210,13 +246,11 @@
         }
 
         function calcularDeudas() {
-            const totalDeudas = state.clients.reduce((acc, client) => acc + Number(client.debt || 0), 0);
-            return totalDeudas.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            return state.clients.reduce((acc, client) => acc + Number(client.debt || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
         }
 
         function calcularGastos() {
-            const totalGastos = state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
-            return totalGastos.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            return state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
         }
 
         let touchStartX = 0;
@@ -260,19 +294,13 @@
                         <div class="carousel-container" style="transform: translateX(-${state.carouselIndex * 50}%);">
                             <div class="carousel-item">
                                 <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mr-2">
-                                    <div>
-                                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Dinero en la Calle (Créditos)</p>
-                                        <h3 class="text-rose-600 text-2xl font-black mt-1">$ ${deudas}</h3>
-                                    </div>
+                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Dinero en la Calle</p><h3 class="text-rose-600 text-2xl font-black mt-1">$ ${deudas}</h3></div>
                                     <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500"><i class="fas fa-hand-holding-dollar text-xl"></i></div>
                                 </div>
                             </div>
                             <div class="carousel-item">
                                 <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center ml-2">
-                                    <div>
-                                        <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Gastos Totales</p>
-                                        <h3 class="text-orange-600 text-2xl font-black mt-1">$ ${gastos}</h3>
-                                    </div>
+                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Gastos Totales</p><h3 class="text-orange-600 text-2xl font-black mt-1">$ ${gastos}</h3></div>
                                     <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500"><i class="fas fa-receipt text-xl"></i></div>
                                 </div>
                             </div>
@@ -305,60 +333,52 @@
             } else if(m === 'inventario') {
                 html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Stock</h2><div class="space-y-3 mb-8 max-h-40 overflow-y-auto">${state.items.map(i => `
                     <div class="list-item">
-                        <div>
-                            <p class="font-bold">${i.name}</p>
-                            <p class="text-emerald-600 font-black">${i.stock} ud</p>
-                        </div>
-                        <button onclick="window.deleteItem('${i.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all">
-                            <i class="fas fa-trash-can text-sm"></i>
-                        </button>
+                        <div><p class="font-bold">${i.name}</p><p class="text-emerald-600 font-black">${i.stock} ud</p></div>
+                        <button onclick="window.deleteItem('${i.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can text-sm"></i></button>
                     </div>`).join('')}</div><input id="nItem" type="text" placeholder="Producto" class="input-group"><input id="nPrice" type="number" placeholder="Precio" class="input-group"><input id="nStock" type="number" placeholder="Stock Inicial" class="input-group"><button onclick="window.addItem()" class="btn-yellow">Añadir</button>`;
             } else if(m === 'admin') {
                 html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Accesos</h2><div class="space-y-3">${state.allUsers.map(u => `<div class="list-item"><div><p class="text-xs font-black">${u.email}</p><p class="text-[9px] font-bold ${u.approved ? 'text-emerald-500' : 'text-amber-500'} uppercase">${u.approved ? 'Autorizado' : 'Pendiente'}</p></div><button onclick="window.toggleUserStatus('${u.id}', ${u.approved})" class="px-4 py-2 ${u.approved ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} rounded-xl text-[10px] font-black uppercase">${u.approved ? 'Bloquear' : 'Aprobar'}</button></div>`).join('')}</div>`;
             } else if(m === 'clientes') {
-                html = `
-                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Clientes</h2>
-                <div class="space-y-3 mb-6 max-h-60 overflow-y-auto">
-                    ${state.clients.map(c => `
-                        <div class="list-item">
-                            <div class="flex-grow">
-                                <p class="font-bold">${c.name} <span class="text-[10px] text-slate-400 font-normal ml-2">#${c.code || 'S/C'}</span></p>
-                                <p class="text-slate-500 text-[10px] font-medium uppercase">${c.phone || 'Sin teléfono'}</p>
-                                <p class="text-rose-600 text-[11px] font-black uppercase">Deuda: $${(c.debt || 0).toFixed(2)}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="window.editClient('${c.id}')" class="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center active:scale-90 transition-all">
-                                    <i class="fas fa-edit text-sm"></i>
-                                </button>
-                                <button onclick="window.deleteClient('${c.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all">
-                                    <i class="fas fa-trash-can text-sm"></i>
-                                </button>
-                            </div>
-                        </div>`).join('')}
-                </div>
-                <div class="border-t border-slate-100 pt-6">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Registro / Edición</p>
-                    <input id="cn" type="text" placeholder="Nombre Completo" class="input-group">
-                    <input id="cc" type="text" placeholder="Código de Cliente" class="input-group">
-                    <input id="cp" type="tel" placeholder="Número de Teléfono" class="input-group">
-                    <button id="btnClientAction" onclick="window.addClient()" class="btn-yellow">Guardar Cliente</button>
-                    ${state.editingClientId ? `<button onclick="state.editingClientId=null; render();" class="w-full mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cancelar Edición</button>` : ''}
-                </div>`;
+                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Clientes</h2><div class="space-y-3 mb-6 max-h-60 overflow-y-auto">${state.clients.map(c => `
+                    <div class="list-item">
+                        <div class="flex-grow"><p class="font-bold">${c.name} <span class="text-[10px] text-slate-400 font-normal ml-2">#${c.code || 'S/C'}</span></p><p class="text-rose-600 text-[11px] font-black uppercase">Deuda: $${(c.debt || 0).toFixed(2)}</p></div>
+                        <div class="flex gap-2">
+                            <button onclick="window.editClient('${c.id}')" class="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-edit text-sm"></i></button>
+                            <button onclick="window.deleteClient('${c.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can text-sm"></i></button>
+                        </div>
+                    </div>`).join('')}</div><div class="border-t border-slate-100 pt-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Registro / Edición</p><input id="cn" type="text" placeholder="Nombre Completo" class="input-group"><input id="cc" type="text" placeholder="Código de Cliente" class="input-group"><input id="cp" type="tel" placeholder="Número de Teléfono" class="input-group"><button id="btnClientAction" onclick="window.addClient()" class="btn-yellow">Guardar Cliente</button>${state.editingClientId ? `<button onclick="state.editingClientId=null; render();" class="w-full mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cancelar Edición</button>` : ''}</div>`;
             } else if(m === 'egresos') {
                 html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Gasto</h2><input id="eDesc" type="text" placeholder="Concepto" class="input-group"><input id="eAmt" type="number" placeholder="Monto" class="input-group"><button onclick="window.addExpense()" class="btn-yellow">Guardar</button>`;
             } else if(m === 'historial') {
                 html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Ventas</h2><div class="space-y-3 max-h-80 overflow-y-auto">${state.sales.map(s => `<div class="list-item"><div><p class="text-sm font-bold">${s.itemName}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(s.date).toLocaleDateString()}</p></div><span class="text-emerald-600 font-black">$${s.total.toFixed(2)}</span></div>`).join('')}</div>`;
             } else if(m === 'deudas') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Cobros</h2><div class="space-y-3">${state.clients.filter(c => c.debt > 0).map(c => `
-                    <div class="list-item">
-                        <div>
-                            <p class="font-bold">${c.name}</p>
-                            <p class="text-rose-600 font-black">$${c.debt.toFixed(2)}</p>
-                        </div>
-                        <button onclick="window.deleteClient('${c.id}')" class="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all">
-                            <i class="fas fa-trash-can"></i>
-                        </button>
-                    </div>`).join('')}</div>`;
+                const payingClient = state.clients.find(c => c.id === state.payingClientId);
+                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Cobros</h2>${state.payingClientId ? `
+                    <div class="bg-amber-50 rounded-3xl p-6 mb-6">
+                        <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Abonar a:</p>
+                        <p class="text-xl font-black mb-1">${payingClient.name}</p>
+                        <p class="text-rose-600 font-bold text-sm mb-4">Deuda Actual: $${payingClient.debt.toFixed(2)}</p>
+                        <input id="aAmt" type="number" placeholder="Monto a abonar" class="input-group" style="background:white">
+                        <button onclick="window.handleAbono()" class="btn-yellow">Confirmar Abono</button>
+                        <button onclick="state.payingClientId=null; render();" class="w-full mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Regresar a la lista</button>
+                    </div>
+                ` : `
+                    <div class="space-y-3 max-h-80 overflow-y-auto">${state.clients.filter(c => c.debt > 0).map(c => `
+                        <div class="list-item flex-col items-stretch gap-3">
+                            <div class="flex justify-between items-center">
+                                <div class="flex-grow">
+                                    <p class="font-bold">${c.name}</p>
+                                    <p class="text-rose-600 font-black">$${c.debt.toFixed(2)}</p>
+                                </div>
+                                <button onclick="window.deleteClient('${c.id}')" class="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can"></i></button>
+                            </div>
+                            <div class="flex gap-2">
+                                <input id="input-abono-${c.id}" type="number" placeholder="Monto" class="flex-grow bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold outline-none focus:border-amber-400">
+                                <div onclick="window.handleAbono('${c.id}')" class="px-4 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer text-[10px] font-black tracking-widest">ABONO</div>
+                            </div>
+                        </div>`).join('')}
+                        ${state.clients.filter(c => c.debt > 0).length === 0 ? '<p class="text-center text-slate-300 font-bold py-10 uppercase text-xs tracking-widest">No hay deudas pendientes</p>' : ''}
+                    </div>`}`;
             }
             return `<div class="modal" onclick="if(event.target === this) window.setModal(null)"><div class="modal-content animate-slide-up"><div class="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" onclick="window.setModal(null)"></div>${html}<button onclick="window.setModal(null)" class="w-full mt-8 text-slate-300 font-black uppercase text-[11px] tracking-widest">Cerrar</button></div></div>`;
         }
