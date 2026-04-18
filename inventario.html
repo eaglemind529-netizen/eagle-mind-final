@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -78,7 +78,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN NUEVA: GESTIÓN DE MARCAS -->
+        <!-- SECCIÓN: GESTIÓN DE MARCAS -->
         <div id="view-brands" class="hidden space-y-6">
             <div class="card-stats p-6 border-l-4 border-green-500">
                 <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-tags mr-2"></i> Registrar Marcas o Variantes</h2>
@@ -88,12 +88,10 @@
                 </form>
             </div>
             
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="brands-list-container">
-                <!-- Las marcas aparecerán aquí como etiquetas -->
-            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="brands-list-container"></div>
         </div>
 
-        <!-- SECCIÓN 2: ENTRADA DE MERCANCÍA -->
+        <!-- SECCIÓN: ENTRADA DE MERCANCÍA -->
         <div id="view-entry" class="hidden space-y-6">
             <div class="card-stats p-6 border-l-4 border-blue-500">
                 <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-truck-loading mr-2"></i> Ingreso de Unidades al Almacén</h2>
@@ -107,7 +105,6 @@
                     <input type="number" id="e-qty" placeholder="Cantidad" class="input-dark" required>
                     <button type="submit" id="btn-save-entry" class="btn-action bg-blue-500 text-white font-black">Registrar Entrada</button>
                 </form>
-                <p class="text-[9px] text-zinc-500 mt-2 italic">* Si la marca no aparece, regístrala primero en la pestaña "Lista de Marcas".</p>
             </div>
 
             <div class="card-stats p-6">
@@ -116,7 +113,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: CATÁLOGO CLIENTE -->
+        <!-- SECCIÓN: CATÁLOGO CLIENTE -->
         <div id="view-catalog" class="hidden">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="catalog-grid"></div>
         </div>
@@ -128,8 +125,9 @@
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+        // CONFIGURACIÓN RECUPERADA
         const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'eagle-mind-v1';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const WHATSAPP = "584120000000"; 
 
         const app = initializeApp(firebaseConfig);
@@ -140,17 +138,19 @@
         let productsCache = [];
         let brandsCache = [];
 
-        const startApp = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (e) { console.error("Error Auth:", e); }
+        // RUTAS UNIFICADAS CON LA APP PRINCIPAL
+        const getItemsPath = (uid) => collection(db, 'artifacts', appId, 'public', 'data', 'items');
+        const getBrandsPath = (uid) => collection(db, 'artifacts', appId, 'public', 'data', 'brands');
+
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
         };
 
-        startApp();
+        initAuth();
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -158,20 +158,18 @@
                 document.getElementById('auth-status').innerText = `SISTEMA ACTIVO: ${user.uid.substring(0,8)}`;
                 document.getElementById('conn-dot').classList.replace('bg-red-500', 'bg-green-500');
                 
-                // Escuchar Productos
-                const itemsRef = collection(db, 'artifacts', appId, 'users', user.uid, 'master_products');
-                onSnapshot(itemsRef, (snap) => {
+                // Escuchar Productos (Ruta Public Data para sincronización)
+                onSnapshot(getItemsPath(user.uid), (snap) => {
                     productsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     renderAll();
-                });
+                }, (err) => console.error("Error productos:", err));
 
                 // Escuchar Marcas
-                const brandsRef = collection(db, 'artifacts', appId, 'users', user.uid, 'brands_list');
-                onSnapshot(brandsRef, (snap) => {
+                onSnapshot(getBrandsPath(user.uid), (snap) => {
                     brandsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     renderBrands();
                     updateEntryBrandSelect();
-                });
+                }, (err) => console.error("Error marcas:", err));
             }
         });
 
@@ -181,7 +179,7 @@
             if(!currentUser) return;
             const name = document.getElementById('b-name').value.toUpperCase().trim();
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'brands_list'), { name, createdAt: serverTimestamp() });
+                await addDoc(getBrandsPath(currentUser.uid), { name, createdAt: serverTimestamp() });
                 e.target.reset();
             } catch(e) { console.error(e); }
         };
@@ -198,7 +196,7 @@
                     code: document.getElementById('m-code').value.toUpperCase().trim(),
                     name: document.getElementById('m-name').value.trim(),
                     cost: Number(document.getElementById('m-cost').value),
-                    priceCash: Number(document.getElementById('m-price-cash').value),
+                    price: Number(document.getElementById('m-price-cash').value), // Mapeado a 'price' de la app original
                     priceWholesale: Number(document.getElementById('m-price-wholesale').value),
                     priceCredit: Number(document.getElementById('m-price-credit').value),
                     priceCreditWholesale: Number(document.getElementById('m-price-credit-wholesale').value),
@@ -206,7 +204,7 @@
                     brands: {},
                     updatedAt: serverTimestamp()
                 };
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'master_products'), data);
+                await addDoc(getItemsPath(currentUser.uid), data);
                 e.target.reset();
             } catch (err) { console.error(err); }
             finally { btn.disabled = false; }
@@ -227,7 +225,7 @@
                 const newBrands = { ...(p.brands || {}) };
                 newBrands[brand] = (newBrands[brand] || 0) + qty;
                 
-                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'master_products', prodId), {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'items', prodId), {
                     brands: newBrands,
                     stock: (p.stock || 0) + qty
                 });
@@ -240,11 +238,9 @@
             container.innerHTML = '';
             brandsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(b => {
                 container.innerHTML += `
-                    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex justify-between items-center group">
+                    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex justify-between items-center">
                         <span class="text-[10px] font-black uppercase text-gray-300">${b.name}</span>
-                        <button onclick="deleteBrand('${b.id}')" class="text-zinc-700 hover:text-red-500 transition-colors">
-                            <i class="fas fa-times-circle"></i>
-                        </button>
+                        <button onclick="deleteBrand('${b.id}')" class="text-zinc-700 hover:text-red-500"><i class="fas fa-times-circle"></i></button>
                     </div>
                 `;
             });
@@ -273,23 +269,23 @@
                 table.innerHTML += `
                     <tr class="hover:bg-zinc-900/40 border-b border-zinc-900">
                         <td class="p-4">
-                            <span class="text-yellow-500 text-[9px] block font-mono">${p.code}</span>
+                            <span class="text-yellow-500 text-[9px] block font-mono">${p.code || 'S/C'}</span>
                             <span class="text-white font-black uppercase text-xs">${p.name}</span>
                         </td>
                         <td class="p-4 text-blue-400 font-black">$${(p.cost || 0).toFixed(2)}</td>
                         <td class="p-4">
-                            <div class="text-white">$${p.priceCash} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceWholesale}</span></div>
+                            <div class="text-white">$${p.price || p.priceCash || 0} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceWholesale || 0}</span></div>
                         </td>
                         <td class="p-4">
-                            <div class="text-white font-bold">$${p.priceCredit} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceCreditWholesale}</span></div>
+                            <div class="text-white font-bold">$${p.priceCredit || 0} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceCreditWholesale || 0}</span></div>
                         </td>
                         <td class="p-4 text-center">
-                            <button onclick="deleteProd('${p.id}')" class="text-rose-600 hover:text-white transition-colors"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="deleteProd('${p.id}')" class="text-rose-600 hover:text-white"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                 `;
 
-                select.innerHTML += `<option value="${p.id}">${p.code} - ${p.name}</option>`;
+                select.innerHTML += `<option value="${p.id}">${p.code || ''} - ${p.name}</option>`;
 
                 const brandTags = Object.entries(p.brands || {}).map(([b, q]) => `
                     <div class="flex justify-between items-center text-[10px] bg-black/40 p-2 rounded-lg mb-1">
@@ -301,7 +297,7 @@
                 summary.innerHTML += `
                     <div class="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800">
                         <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-                            <span class="text-[9px] text-zinc-600">${p.code}</span>
+                            <span class="text-[9px] text-zinc-600">${p.code || 'S/C'}</span>
                             <span class="bg-yellow-500 text-black px-2 py-0.5 rounded text-[10px] font-black">${p.stock || 0} TOTAL</span>
                         </div>
                         <h4 class="text-white font-black text-sm mb-4 truncate">${p.name}</h4>
@@ -316,7 +312,7 @@
                             <div>
                                 <div class="flex justify-between mb-4">
                                     <span class="status-badge bg-yellow-500 text-black">Disponible</span>
-                                    <span class="text-white font-black text-2xl tracking-tighter">$${p.priceCash}</span>
+                                    <span class="text-white font-black text-2xl tracking-tighter">$${p.price || p.priceCash || 0}</span>
                                 </div>
                                 <h3 class="text-white font-black text-xl italic uppercase leading-tight mb-4">${p.name}</h3>
                             </div>
@@ -333,24 +329,17 @@
 
         window.deleteProd = async (id) => {
             if(confirm("¿Eliminar este producto permanentemente?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'master_products', id));
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'items', id));
             }
         };
 
         window.deleteBrand = async (id) => {
             if(confirm("¿Eliminar esta marca de la lista?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'brands_list', id));
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', id));
             }
         };
 
         window.switchTab = (tab) => {
             ['view-master', 'view-brands', 'view-entry', 'view-catalog'].forEach(v => document.getElementById(v).classList.add('hidden'));
             ['btn-master', 'btn-brands', 'btn-entry', 'btn-catalog'].forEach(b => document.getElementById(b).classList.remove('active'));
-            document.getElementById('view-' + tab).classList.remove('hidden');
-            document.getElementById('btn-' + tab).classList.add('active');
-        };
-    </script>
-</body>
-</html>
-
-```
+        
