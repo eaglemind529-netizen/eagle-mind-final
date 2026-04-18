@@ -4,88 +4,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eagle Stock - Control Real</title>
+    <title>Eagle Stock - Inventario</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { background-color: #000; color: #FFD200; font-family: sans-serif; }
-        .input-estilo { background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; outline: none; }
-        .boton-amarillo { background: #FFD200; color: #000; font-weight: 900; padding: 16px; border-radius: 12px; width: 100%; cursor: pointer; border: none; text-transform: uppercase; }
+        .input-estilo { background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; outline: none; font-size: 14px; }
+        .input-estilo:focus { border-color: #FFD200; }
+        .boton-amarillo { background: #FFD200; color: #000; font-weight: 900; padding: 16px; border-radius: 12px; width: 100%; cursor: pointer; border: none; text-transform: uppercase; font-size: 13px; }
+        .card-negra { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 12px; }
         .tab-activa { border-bottom: 3px solid #FFD200; color: #FFD200; font-weight: bold; }
         .tab-inactiva { color: #fff; opacity: 0.4; }
         .oculto { display: none !important; }
-        .card-negra { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 12px; }
     </style>
 </head>
 <body class="p-4">
 
+    <!-- CABECERA -->
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-black italic uppercase text-yellow-500">EAGLE <span class="text-white font-normal">STOCK</span></h1>
-        <div id="status" class="text-[9px] bg-red-600 text-white px-3 py-1 rounded-full font-bold uppercase">Conectando...</div>
+        <h1 class="text-3xl font-black italic uppercase tracking-tighter text-yellow-500">EAGLE <span class="text-white font-normal">INVENTARIO</span></h1>
+        <div id="status" class="text-[9px] bg-red-600 text-white px-3 py-1 rounded-full font-bold uppercase italic font-mono">Desconectado</div>
     </div>
 
+    <!-- NAVEGACIÓN INTERNA -->
     <div class="flex gap-4 border-b border-zinc-900 mb-6 text-[10px] uppercase font-black tracking-widest">
-        <button onclick="cambiarPestana('productos')" id="t-prod" class="pb-2 tab-activa">PRODUCTOS</button>
-        <button onclick="cambiarPestana('marcas')" id="t-marcas" class="pb-2 tab-inactiva">MARCAS</button>
-        <button onclick="cambiarPestana('entradas')" id="t-ent" class="pb-2 tab-inactiva">INVENTARIO</button>
+        <button onclick="cambiarPestana('maestro')" id="t-maestro" class="pb-2 tab-activa">REGISTRO PRODUCTOS</button>
+        <button onclick="cambiarPestana('movimientos')" id="t-mov" class="pb-2 tab-inactiva">ENTRADAS / SALIDAS</button>
     </div>
 
-    <!-- SECCIÓN PRODUCTOS -->
-    <div id="sec-productos" class="espacio-pestana">
+    <!-- SECCIÓN: REGISTRO DE PRODUCTOS CON 4 PRECIOS -->
+    <div id="sec-maestro" class="espacio-pestana">
         <form id="form-producto" class="space-y-3 mb-8">
             <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="p-codigo" placeholder="Código" class="input-estilo" required>
-                <input type="text" id="p-nombre" placeholder="Nombre del Producto" class="input-estilo" required>
+                <input type="text" id="p-codigo" placeholder="CÓDIGO" class="input-estilo" required>
+                <input type="text" id="p-nombre" placeholder="NOMBRE DEL PRODUCTO" class="input-estilo" required>
             </div>
-            <input type="number" step="0.01" id="p-costo" placeholder="Costo Unitario $" class="input-estilo" required>
+            <input type="number" step="0.01" id="p-costo" placeholder="COSTO UNITARIO $" class="input-estilo" required>
             <div class="grid grid-cols-2 gap-3">
-                <input type="number" step="0.01" id="p-detal" placeholder="Precio Detal $" class="input-estilo" required>
-                <input type="number" step="0.01" id="p-mayor" placeholder="Precio Mayor $" class="input-estilo" required>
+                <input type="number" step="0.01" id="p-detal" placeholder="PRECIO DETAL $" class="input-estilo" required>
+                <input type="number" step="0.01" id="p-mayor" placeholder="PRECIO MAYOR $" class="input-estilo" required>
             </div>
             <div class="grid grid-cols-2 gap-3">
-                <input type="number" step="0.01" id="p-credito" placeholder="Precio Crédito $" class="input-estilo" required>
-                <input type="number" step="0.01" id="p-credito-mayor" placeholder="Crédito Mayor $" class="input-estilo" required>
+                <input type="number" step="0.01" id="p-credito" placeholder="PRECIO CRÉDITO $" class="input-estilo" required>
+                <input type="number" step="0.01" id="p-credito-mayor" placeholder="CRÉDITO MAYOR $" class="input-estilo" required>
             </div>
-            <button type="submit" class="boton-amarillo">GUARDAR PRODUCTO</button>
+            <button type="submit" class="boton-amarillo">GUARDAR EN SISTEMA</button>
         </form>
-        <div id="lista-productos" class="space-y-3"></div>
+
+        <h3 class="text-white text-[10px] mb-4 font-black uppercase italic tracking-widest text-center">Lista de Productos Cargados</h3>
+        <div id="lista-productos" class="space-y-3 pb-20"></div>
     </div>
 
-    <!-- SECCIÓN MARCAS -->
-    <div id="sec-marcas" class="espacio-pestana oculto">
-        <form id="form-marca" class="space-y-3 mb-8">
-            <input type="text" id="m-nombre" placeholder="Nombre de la Marca" class="input-estilo" required>
-            <button type="submit" class="boton-amarillo">AGREGAR MARCA</button>
-        </form>
-        <div id="lista-marcas" class="grid grid-cols-2 gap-3"></div>
-    </div>
-
-    <!-- SECCIÓN INVENTARIO (ENTRADA, SALIDA Y EXISTENTE) -->
-    <div id="sec-entradas" class="espacio-pestana oculto">
+    <!-- SECCIÓN: MOVIMIENTOS DE INVENTARIO (ENTRADAS Y SALIDAS) -->
+    <div id="sec-movimientos" class="espacio-pestana oculto">
         <div class="card-negra">
-            <h2 class="text-white text-[10px] mb-4 font-black uppercase text-center italic">Registrar Venta o Ingreso</h2>
+            <h2 class="text-white text-[10px] mb-4 font-black uppercase italic text-center">Cargar Movimiento</h2>
             <form id="form-movimiento" class="space-y-4">
-                <select id="sel-producto" class="input-estilo" required><option value="">Seleccionar Producto...</option></select>
+                <select id="sel-producto" class="input-estilo" required>
+                    <option value="">SELECCIONAR PRODUCTO...</option>
+                </select>
                 <div class="grid grid-cols-2 gap-3">
                     <select id="sel-tipo" class="input-estilo text-yellow-500 font-bold" required>
-                        <option value="entrada">COMPRA / ENTRADA (+)</option>
-                        <option value="salida">VENTA / SALIDA (-)</option>
+                        <option value="entrada">ENTRADA (+)</option>
+                        <option value="salida">SALIDA / VENTA (-)</option>
                     </select>
-                    <input type="number" id="mov-cantidad" placeholder="Cantidad" class="input-estilo" required>
+                    <input type="number" id="mov-cantidad" placeholder="CANTIDAD" class="input-estilo" required>
                 </div>
-                <button type="submit" class="boton-amarillo">ACTUALIZAR STOCK</button>
+                <button type="submit" class="boton-amarillo">ACTUALIZAR EXISTENCIAS</button>
             </form>
         </div>
-        
-        <h3 class="text-white text-[10px] mb-4 font-black uppercase italic px-2 tracking-widest text-center">Estado de Almacén</h3>
-        <div id="resumen-inventario" class="space-y-3"></div>
+
+        <h3 class="text-white text-[10px] my-4 font-black uppercase italic tracking-widest text-center">Existencias Reales</h3>
+        <div id="resumen-inventario" class="space-y-3 pb-20"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+        // Configuración automática del entorno
         const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'eagle-stock-v1';
         
@@ -94,32 +92,26 @@
         const auth = getAuth(app);
 
         let productos = [];
-        let marcas = [];
 
-        const iniciar = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else { await signInAnonymously(auth); }
+        // Iniciar Conexión
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
                 document.getElementById('status').innerText = "CONECTADO";
                 document.getElementById('status').classList.replace('bg-red-600', 'bg-green-600');
                 cargarDatos();
-            } catch (e) { console.error(e); }
-        };
-
-        iniciar();
+            } else {
+                signInAnonymously(auth);
+            }
+        });
 
         function cargarDatos() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), (snap) => {
                 productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderizarProductos();
-            });
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'marcas'), (snap) => {
-                marcas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderizarMarcas();
+                renderizarPantallas();
             });
         }
 
+        // Crear Producto
         document.getElementById('form-producto').onsubmit = async (e) => {
             e.preventDefault();
             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), {
@@ -136,91 +128,84 @@
             e.target.reset();
         };
 
-        document.getElementById('form-marca').onsubmit = async (e) => {
-            e.preventDefault();
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcas'), {
-                nombre: document.getElementById('m-nombre').value.toUpperCase()
-            });
-            e.target.reset();
-        };
-
+        // Procesar Movimiento (Entrada o Salida)
         document.getElementById('form-movimiento').onsubmit = async (e) => {
             e.preventDefault();
             const pId = document.getElementById('sel-producto').value;
             const tipo = document.getElementById('sel-tipo').value;
             const cant = Number(document.getElementById('mov-cantidad').value);
-
             const p = productos.find(x => x.id === pId);
+
             let nEntradas = p.entradas || 0;
             let nSalidas = p.salidas || 0;
 
-            if (tipo === 'entrada') {
-                nEntradas += cant;
-            } else {
-                nSalidas += cant;
-            }
+            if (tipo === 'entrada') nEntradas += cant;
+            else nSalidas += cant;
 
             await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', pId), {
                 entradas: nEntradas,
                 salidas: nSalidas
             });
-            
             e.target.reset();
         };
 
-        function renderizarProductos() {
-            const lista = document.getElementById('lista-productos');
-            const select = document.getElementById('sel-producto');
-            const resumen = document.getElementById('resumen-inventario');
-            lista.innerHTML = ''; select.innerHTML = '<option value="">Seleccionar Producto...</option>'; resumen.innerHTML = '';
+        function renderizarPantallas() {
+            const listaP = document.getElementById('lista-productos');
+            const selectP = document.getElementById('sel-producto');
+            const resumenI = document.getElementById('resumen-inventario');
+
+            listaP.innerHTML = ''; selectP.innerHTML = '<option value="">SELECCIONAR PRODUCTO...</option>'; resumenI.innerHTML = '';
 
             productos.forEach(p => {
-                lista.innerHTML += `
+                // Lista de Maestro
+                listaP.innerHTML += `
                     <div class="card-negra">
-                        <div class="flex justify-between items-start mb-2">
-                            <div><span class="text-[9px] text-zinc-500 font-bold">${p.codigo}</span><p class="text-white font-bold uppercase italic">${p.nombre}</p></div>
-                            <button onclick="window.borrar('productos','${p.id}')"><i class="fas fa-trash text-zinc-800"></i></button>
+                        <div class="flex justify-between items-start">
+                            <div class="italic uppercase">
+                                <span class="text-[9px] text-zinc-600 font-bold">${p.codigo}</span>
+                                <p class="text-white font-black">${p.nombre}</p>
+                            </div>
+                            <button onclick="window.eliminar('${p.id}')" class="text-zinc-800"><i class="fas fa-trash"></i></button>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase italic">
-                            <span class="text-blue-500">Costo: $${p.costo}</span>
-                            <span class="text-green-500">Detal: $${p.precioDetal}</span>
+                        <div class="grid grid-cols-2 gap-2 mt-2 text-[10px] font-bold uppercase italic">
+                            <span class="text-blue-500">COSTO: $${p.costo}</span>
+                            <span class="text-green-500">DETAL: $${p.precioDetal}</span>
                         </div>
                     </div>`;
-                
-                select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
 
-                const existente = (p.entradas || 0) - (p.salidas || 0);
+                // Select de movimientos
+                selectP.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
 
-                resumen.innerHTML += `
-                    <div class="card-negra">
-                        <div class="flex justify-between border-b border-yellow-500 pb-2 mb-3 italic font-black uppercase text-[11px]">
-                            <span class="text-white">${p.nombre}</span>
-                            <span class="text-yellow-500">${existente} EXISTENTE</span>
+                // Fila de Inventario
+                const existencia = (p.entradas || 0) - (p.salidas || 0);
+                resumenI.innerHTML += `
+                    <div class="card-negra border-l-4 ${existencia <= 0 ? 'border-red-600' : 'border-yellow-500'}">
+                        <div class="flex justify-between items-center border-b border-zinc-900 pb-2 mb-3">
+                            <span class="text-white font-black uppercase italic text-[11px]">${p.nombre}</span>
+                            <span class="bg-yellow-500 text-black px-2 py-0.5 rounded font-black text-[12px] italic">${existencia} EXISTENTE</span>
                         </div>
-                        <div class="flex justify-between text-[10px] font-black uppercase italic">
-                            <div class="flex flex-col"><span class="text-zinc-500">Cant. Entrante</span><span class="text-green-500 text-lg">${p.entradas || 0}</span></div>
-                            <div class="flex flex-col items-end"><span class="text-zinc-500">Cant. Saliente (Ventas)</span><span class="text-red-500 text-lg">${p.salidas || 0}</span></div>
+                        <div class="flex justify-between text-[10px] font-black uppercase italic tracking-tighter">
+                            <div class="flex flex-col">
+                                <span class="text-zinc-600">Total Entradas</span>
+                                <span class="text-green-500 text-lg">${p.entradas || 0}</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                <span class="text-zinc-600">Total Salidas</span>
+                                <span class="text-red-500 text-lg">${p.salidas || 0}</span>
+                            </div>
                         </div>
                     </div>`;
             });
         }
 
-        function renderizarMarcas() {
-            const lista = document.getElementById('lista-marcas');
-            lista.innerHTML = '';
-            marcas.forEach(m => {
-                lista.innerHTML += `<div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 flex justify-between text-[10px] font-bold uppercase italic"><span>${m.nombre}</span><button onclick="window.borrar('marcas','${m.id}')">×</button></div>`;
-            });
-        }
-
-        window.borrar = async (col, id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', col, id)); };
+        window.eliminar = async (id) => { if(confirm("¿ELIMINAR PRODUCTO DEL SISTEMA?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', id)); };
 
         window.cambiarPestana = (p) => {
             document.querySelectorAll('.espacio-pestana').forEach(x => x.classList.add('oculto'));
             document.querySelectorAll('button').forEach(x => { x.classList.remove('tab-activa'); x.classList.add('tab-inactiva'); });
             document.getElementById('sec-' + p).classList.remove('oculto');
-            const ids = {productos: 't-prod', marcas: 't-marcas', entradas: 't-ent'};
-            document.getElementById(ids[p]).className = 'pb-2 tab-activa';
+            const btnId = p === 'maestro' ? 't-maestro' : 't-mov';
+            document.getElementById(btnId).className = 'pb-2 tab-activa';
         };
     </script>
 </body>
