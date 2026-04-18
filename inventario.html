@@ -1,349 +1,226 @@
-
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eagle Stock - Gestión Maestra</title>
+    <title>Eagle Stock - Control Real</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { background-color: #000; color: #FFD200; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .card-stats { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 20px; }
-        .input-dark { background: #111; border: 1px solid #222; color: white; border-radius: 12px; padding: 10px; font-size: 13px; width: 100%; }
-        .input-dark:focus { border-color: #FFD200; outline: none; }
-        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.2s; opacity: 0.5; font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 10px 20px; }
-        .tab-btn.active { border-color: #FFD200; color: #FFD200; opacity: 1; }
-        .btn-action { background: #FFD200; color: #000; font-weight: 900; text-transform: uppercase; font-size: 11px; border-radius: 12px; padding: 12px; transition: 0.3s; width: 100%; cursor: pointer; border: none; }
-        .btn-action:disabled { background: #333; color: #666; cursor: not-allowed; }
-        .btn-action:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
-        .status-badge { font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 900; text-transform: uppercase; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        body { background-color: #000; color: #FFD200; font-family: sans-serif; }
+        .input-estilo { background: #111; border: 1px solid #333; color: white; padding: 12px; border-radius: 10px; width: 100%; outline: none; }
+        .boton-amarillo { background: #FFD200; color: #000; font-weight: 900; padding: 16px; border-radius: 12px; width: 100%; cursor: pointer; border: none; text-transform: uppercase; }
+        .tab-activa { border-bottom: 3px solid #FFD200; color: #FFD200; font-weight: bold; }
+        .tab-inactiva { color: #fff; opacity: 0.4; }
+        .oculto { display: none !important; }
+        .card-negra { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 15px; border-radius: 15px; margin-bottom: 12px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-7xl mx-auto">
-        
-        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-900 pb-6">
-            <div>
-                <h1 class="text-4xl font-black italic tracking-tighter uppercase">Eagle <span class="text-white font-normal">Master</span></h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <span id="conn-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <p id="auth-status" class="text-gray-500 text-[10px] font-bold uppercase tracking-widest italic">Iniciando sistema...</p>
+<body class="p-4">
+
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-black italic uppercase text-yellow-500">EAGLE <span class="text-white font-normal">STOCK</span></h1>
+        <div id="status" class="text-[9px] bg-red-600 text-white px-3 py-1 rounded-full font-bold uppercase">Conectando...</div>
+    </div>
+
+    <div class="flex gap-4 border-b border-zinc-900 mb-6 text-[10px] uppercase font-black tracking-widest">
+        <button onclick="cambiarPestana('productos')" id="t-prod" class="pb-2 tab-activa">PRODUCTOS</button>
+        <button onclick="cambiarPestana('marcas')" id="t-marcas" class="pb-2 tab-inactiva">MARCAS</button>
+        <button onclick="cambiarPestana('entradas')" id="t-ent" class="pb-2 tab-inactiva">INVENTARIO</button>
+    </div>
+
+    <!-- SECCIÓN PRODUCTOS -->
+    <div id="sec-productos" class="espacio-pestana">
+        <form id="form-producto" class="space-y-3 mb-8">
+            <div class="grid grid-cols-2 gap-3">
+                <input type="text" id="p-codigo" placeholder="Código" class="input-estilo" required>
+                <input type="text" id="p-nombre" placeholder="Nombre del Producto" class="input-estilo" required>
+            </div>
+            <input type="number" step="0.01" id="p-costo" placeholder="Costo Unitario $" class="input-estilo" required>
+            <div class="grid grid-cols-2 gap-3">
+                <input type="number" step="0.01" id="p-detal" placeholder="Precio Detal $" class="input-estilo" required>
+                <input type="number" step="0.01" id="p-mayor" placeholder="Precio Mayor $" class="input-estilo" required>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <input type="number" step="0.01" id="p-credito" placeholder="Precio Crédito $" class="input-estilo" required>
+                <input type="number" step="0.01" id="p-credito-mayor" placeholder="Crédito Mayor $" class="input-estilo" required>
+            </div>
+            <button type="submit" class="boton-amarillo">GUARDAR PRODUCTO</button>
+        </form>
+        <div id="lista-productos" class="space-y-3"></div>
+    </div>
+
+    <!-- SECCIÓN MARCAS -->
+    <div id="sec-marcas" class="espacio-pestana oculto">
+        <form id="form-marca" class="space-y-3 mb-8">
+            <input type="text" id="m-nombre" placeholder="Nombre de la Marca" class="input-estilo" required>
+            <button type="submit" class="boton-amarillo">AGREGAR MARCA</button>
+        </form>
+        <div id="lista-marcas" class="grid grid-cols-2 gap-3"></div>
+    </div>
+
+    <!-- SECCIÓN INVENTARIO (ENTRADA, SALIDA Y EXISTENTE) -->
+    <div id="sec-entradas" class="espacio-pestana oculto">
+        <div class="card-negra">
+            <h2 class="text-white text-[10px] mb-4 font-black uppercase text-center italic">Registrar Venta o Ingreso</h2>
+            <form id="form-movimiento" class="space-y-4">
+                <select id="sel-producto" class="input-estilo" required><option value="">Seleccionar Producto...</option></select>
+                <div class="grid grid-cols-2 gap-3">
+                    <select id="sel-tipo" class="input-estilo text-yellow-500 font-bold" required>
+                        <option value="entrada">COMPRA / ENTRADA (+)</option>
+                        <option value="salida">VENTA / SALIDA (-)</option>
+                    </select>
+                    <input type="number" id="mov-cantidad" placeholder="Cantidad" class="input-estilo" required>
                 </div>
-            </div>
-            <div class="flex bg-zinc-900/50 p-1 rounded-xl overflow-x-auto max-w-full">
-                <button onclick="switchTab('master')" id="btn-master" class="tab-btn active whitespace-nowrap">Maestro de Productos</button>
-                <button onclick="switchTab('brands')" id="btn-brands" class="tab-btn whitespace-nowrap">Lista de Marcas</button>
-                <button onclick="switchTab('entry')" id="btn-entry" class="tab-btn whitespace-nowrap">Entrada Mercancía</button>
-                <button onclick="switchTab('catalog')" id="btn-catalog" class="tab-btn whitespace-nowrap">Catálogo</button>
-            </div>
-        </header>
-
-        <!-- SECCIÓN 1: MAESTRO DE PRODUCTOS -->
-        <div id="view-master" class="space-y-6">
-            <div class="card-stats p-6 border-l-4 border-yellow-500">
-                <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-box mr-2"></i> Registro Maestro de Productos</h2>
-                <form id="master-reg-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="md:col-span-1"><input type="text" id="m-code" placeholder="Código de Producto" class="input-dark" required></div>
-                    <div class="md:col-span-2"><input type="text" id="m-name" placeholder="Nombre del Producto" class="input-dark" required></div>
-                    <div class="md:col-span-1"><input type="number" step="0.01" id="m-cost" placeholder="Costo Unitario $" class="input-dark" required></div>
-                    <input type="number" step="0.01" id="m-price-cash" placeholder="Precio Contado $" class="input-dark" required>
-                    <input type="number" step="0.01" id="m-price-wholesale" placeholder="Precio Mayor $" class="input-dark" required>
-                    <input type="number" step="0.01" id="m-price-credit" placeholder="Precio Crédito $" class="input-dark" required>
-                    <input type="number" step="0.01" id="m-price-credit-wholesale" placeholder="Crédito Mayor $" class="input-dark" required>
-                    <div class="md:col-span-4 mt-2">
-                        <button type="submit" id="btn-save-master" class="btn-action">Guardar en Lista Maestra</button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="card-stats overflow-x-auto">
-                <table class="w-full text-left text-[11px] min-w-[800px]">
-                    <thead class="bg-zinc-900 text-gray-400 uppercase font-black">
-                        <tr>
-                            <th class="p-4">Cód / Producto</th>
-                            <th class="p-4">Costo</th>
-                            <th class="p-4">Precios (Contado/Mayor)</th>
-                            <th class="p-4">Precios (Crédito/Mayor)</th>
-                            <th class="p-4 text-center">Gestión</th>
-                        </tr>
-                    </thead>
-                    <tbody id="master-table-body" class="divide-y divide-zinc-900 italic">
-                        <tr><td colspan="5" class="p-10 text-center text-gray-600 animate-pulse">Sincronizando con nube...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+                <button type="submit" class="boton-amarillo">ACTUALIZAR STOCK</button>
+            </form>
         </div>
-
-        <!-- SECCIÓN: GESTIÓN DE MARCAS -->
-        <div id="view-brands" class="hidden space-y-6">
-            <div class="card-stats p-6 border-l-4 border-green-500">
-                <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-tags mr-2"></i> Registrar Marcas o Variantes</h2>
-                <form id="brand-reg-form" class="flex gap-4">
-                    <input type="text" id="b-name" placeholder="Escribe el nombre de la marca (Ej: Marca Premium, Marca Económica)" class="input-dark" required>
-                    <button type="submit" class="btn-action w-auto px-10 bg-green-500 text-white">Agregar Marca</button>
-                </form>
-            </div>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="brands-list-container"></div>
-        </div>
-
-        <!-- SECCIÓN: ENTRADA DE MERCANCÍA -->
-        <div id="view-entry" class="hidden space-y-6">
-            <div class="card-stats p-6 border-l-4 border-blue-500">
-                <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-truck-loading mr-2"></i> Ingreso de Unidades al Almacén</h2>
-                <form id="entry-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <select id="e-product-select" class="input-dark" required>
-                        <option value="">-- Seleccione Producto --</option>
-                    </select>
-                    <select id="e-brand-select" class="input-dark" required>
-                        <option value="">-- Seleccione Marca --</option>
-                    </select>
-                    <input type="number" id="e-qty" placeholder="Cantidad" class="input-dark" required>
-                    <button type="submit" id="btn-save-entry" class="btn-action bg-blue-500 text-white font-black">Registrar Entrada</button>
-                </form>
-            </div>
-
-            <div class="card-stats p-6">
-                <h2 class="text-xs font-black uppercase mb-6 text-gray-500 italic">Inventario Detallado</h2>
-                <div id="inventory-summary" class="grid grid-cols-1 md:grid-cols-3 gap-6 font-bold uppercase italic"></div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN: CATÁLOGO CLIENTE -->
-        <div id="view-catalog" class="hidden">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="catalog-grid"></div>
-        </div>
-
+        
+        <h3 class="text-white text-[10px] mb-4 font-black uppercase italic px-2 tracking-widest text-center">Estado de Almacén</h3>
+        <div id="resumen-inventario" class="space-y-3"></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // CONFIGURACIÓN RECUPERADA
         const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const WHATSAPP = "584120000000"; 
-
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'eagle-stock-v1';
+        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        
-        let currentUser = null;
-        let productsCache = [];
-        let brandsCache = [];
 
-        // RUTAS UNIFICADAS CON LA APP PRINCIPAL
-        const getItemsPath = (uid) => collection(db, 'artifacts', appId, 'public', 'data', 'items');
-        const getBrandsPath = (uid) => collection(db, 'artifacts', appId, 'public', 'data', 'brands');
+        let productos = [];
+        let marcas = [];
 
-        const initAuth = async () => {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
+        const iniciar = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else { await signInAnonymously(auth); }
+                document.getElementById('status').innerText = "CONECTADO";
+                document.getElementById('status').classList.replace('bg-red-600', 'bg-green-600');
+                cargarDatos();
+            } catch (e) { console.error(e); }
+        };
+
+        iniciar();
+
+        function cargarDatos() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), (snap) => {
+                productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderizarProductos();
+            });
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'marcas'), (snap) => {
+                marcas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderizarMarcas();
+            });
+        }
+
+        document.getElementById('form-producto').onsubmit = async (e) => {
+            e.preventDefault();
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'productos'), {
+                codigo: document.getElementById('p-codigo').value.toUpperCase(),
+                nombre: document.getElementById('p-nombre').value,
+                costo: Number(document.getElementById('p-costo').value),
+                precioDetal: Number(document.getElementById('p-detal').value),
+                precioMayor: Number(document.getElementById('p-mayor').value),
+                precioCredito: Number(document.getElementById('p-credito').value),
+                precioCreditoMayor: Number(document.getElementById('p-credito-mayor').value),
+                entradas: 0,
+                salidas: 0
+            });
+            e.target.reset();
+        };
+
+        document.getElementById('form-marca').onsubmit = async (e) => {
+            e.preventDefault();
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marcas'), {
+                nombre: document.getElementById('m-nombre').value.toUpperCase()
+            });
+            e.target.reset();
+        };
+
+        document.getElementById('form-movimiento').onsubmit = async (e) => {
+            e.preventDefault();
+            const pId = document.getElementById('sel-producto').value;
+            const tipo = document.getElementById('sel-tipo').value;
+            const cant = Number(document.getElementById('mov-cantidad').value);
+
+            const p = productos.find(x => x.id === pId);
+            let nEntradas = p.entradas || 0;
+            let nSalidas = p.salidas || 0;
+
+            if (tipo === 'entrada') {
+                nEntradas += cant;
             } else {
-                await signInAnonymously(auth);
+                nSalidas += cant;
             }
-        };
 
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('auth-status').innerText = `SISTEMA ACTIVO: ${user.uid.substring(0,8)}`;
-                document.getElementById('conn-dot').classList.replace('bg-red-500', 'bg-green-500');
-                
-                // Escuchar Productos (Ruta Public Data para sincronización)
-                onSnapshot(getItemsPath(user.uid), (snap) => {
-                    productsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    renderAll();
-                }, (err) => console.error("Error productos:", err));
-
-                // Escuchar Marcas
-                onSnapshot(getBrandsPath(user.uid), (snap) => {
-                    brandsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    renderBrands();
-                    updateEntryBrandSelect();
-                }, (err) => console.error("Error marcas:", err));
-            }
-        });
-
-        // GUARDAR MARCA
-        document.getElementById('brand-reg-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!currentUser) return;
-            const name = document.getElementById('b-name').value.toUpperCase().trim();
-            try {
-                await addDoc(getBrandsPath(currentUser.uid), { name, createdAt: serverTimestamp() });
-                e.target.reset();
-            } catch(e) { console.error(e); }
-        };
-
-        // GUARDAR PRODUCTO MAESTRO
-        document.getElementById('master-reg-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!currentUser) return;
-            const btn = document.getElementById('btn-save-master');
-            btn.disabled = true;
-
-            try {
-                const data = {
-                    code: document.getElementById('m-code').value.toUpperCase().trim(),
-                    name: document.getElementById('m-name').value.trim(),
-                    cost: Number(document.getElementById('m-cost').value),
-                    price: Number(document.getElementById('m-price-cash').value), // Mapeado a 'price' de la app original
-                    priceWholesale: Number(document.getElementById('m-price-wholesale').value),
-                    priceCredit: Number(document.getElementById('m-price-credit').value),
-                    priceCreditWholesale: Number(document.getElementById('m-price-credit-wholesale').value),
-                    stock: 0,
-                    brands: {},
-                    updatedAt: serverTimestamp()
-                };
-                await addDoc(getItemsPath(currentUser.uid), data);
-                e.target.reset();
-            } catch (err) { console.error(err); }
-            finally { btn.disabled = false; }
-        };
-
-        // REGISTRAR ENTRADA
-        document.getElementById('entry-form').onsubmit = async (e) => {
-            e.preventDefault();
-            if(!currentUser) return;
-            const prodId = document.getElementById('e-product-select').value;
-            const brand = document.getElementById('e-brand-select').value;
-            const qty = Number(document.getElementById('e-qty').value);
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'productos', pId), {
+                entradas: nEntradas,
+                salidas: nSalidas
+            });
             
-            if(!prodId || !brand) return;
+            e.target.reset();
+        };
 
-            try {
-                const p = productsCache.find(x => x.id === prodId);
-                const newBrands = { ...(p.brands || {}) };
-                newBrands[brand] = (newBrands[brand] || 0) + qty;
+        function renderizarProductos() {
+            const lista = document.getElementById('lista-productos');
+            const select = document.getElementById('sel-producto');
+            const resumen = document.getElementById('resumen-inventario');
+            lista.innerHTML = ''; select.innerHTML = '<option value="">Seleccionar Producto...</option>'; resumen.innerHTML = '';
+
+            productos.forEach(p => {
+                lista.innerHTML += `
+                    <div class="card-negra">
+                        <div class="flex justify-between items-start mb-2">
+                            <div><span class="text-[9px] text-zinc-500 font-bold">${p.codigo}</span><p class="text-white font-bold uppercase italic">${p.nombre}</p></div>
+                            <button onclick="window.borrar('productos','${p.id}')"><i class="fas fa-trash text-zinc-800"></i></button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase italic">
+                            <span class="text-blue-500">Costo: $${p.costo}</span>
+                            <span class="text-green-500">Detal: $${p.precioDetal}</span>
+                        </div>
+                    </div>`;
                 
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'items', prodId), {
-                    brands: newBrands,
-                    stock: (p.stock || 0) + qty
-                });
-                e.target.reset();
-            } catch (err) { console.error(err); }
-        };
+                select.innerHTML += `<option value="${p.id}">${p.nombre}</option>`;
 
-        function renderBrands() {
-            const container = document.getElementById('brands-list-container');
-            container.innerHTML = '';
-            brandsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(b => {
-                container.innerHTML += `
-                    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex justify-between items-center">
-                        <span class="text-[10px] font-black uppercase text-gray-300">${b.name}</span>
-                        <button onclick="deleteBrand('${b.id}')" class="text-zinc-700 hover:text-red-500"><i class="fas fa-times-circle"></i></button>
-                    </div>
-                `;
-            });
-        }
+                const existente = (p.entradas || 0) - (p.salidas || 0);
 
-        function updateEntryBrandSelect() {
-            const select = document.getElementById('e-brand-select');
-            select.innerHTML = '<option value="">-- Seleccione Marca --</option>';
-            brandsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(b => {
-                select.innerHTML += `<option value="${b.name}">${b.name}</option>`;
-            });
-        }
-
-        function renderAll() {
-            const table = document.getElementById('master-table-body');
-            const select = document.getElementById('e-product-select');
-            const summary = document.getElementById('inventory-summary');
-            const catalog = document.getElementById('catalog-grid');
-
-            table.innerHTML = '';
-            summary.innerHTML = '';
-            catalog.innerHTML = '';
-            select.innerHTML = '<option value="">-- Seleccione Producto --</option>';
-
-            productsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
-                table.innerHTML += `
-                    <tr class="hover:bg-zinc-900/40 border-b border-zinc-900">
-                        <td class="p-4">
-                            <span class="text-yellow-500 text-[9px] block font-mono">${p.code || 'S/C'}</span>
-                            <span class="text-white font-black uppercase text-xs">${p.name}</span>
-                        </td>
-                        <td class="p-4 text-blue-400 font-black">$${(p.cost || 0).toFixed(2)}</td>
-                        <td class="p-4">
-                            <div class="text-white">$${p.price || p.priceCash || 0} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceWholesale || 0}</span></div>
-                        </td>
-                        <td class="p-4">
-                            <div class="text-white font-bold">$${p.priceCredit || 0} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceCreditWholesale || 0}</span></div>
-                        </td>
-                        <td class="p-4 text-center">
-                            <button onclick="deleteProd('${p.id}')" class="text-rose-600 hover:text-white"><i class="fas fa-trash-alt"></i></button>
-                        </td>
-                    </tr>
-                `;
-
-                select.innerHTML += `<option value="${p.id}">${p.code || ''} - ${p.name}</option>`;
-
-                const brandTags = Object.entries(p.brands || {}).map(([b, q]) => `
-                    <div class="flex justify-between items-center text-[10px] bg-black/40 p-2 rounded-lg mb-1">
-                        <span class="text-zinc-500 font-bold tracking-widest">${b}</span>
-                        <span class="text-yellow-500 font-black">${q}</span>
-                    </div>
-                `).join('');
-
-                summary.innerHTML += `
-                    <div class="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800">
-                        <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
-                            <span class="text-[9px] text-zinc-600">${p.code || 'S/C'}</span>
-                            <span class="bg-yellow-500 text-black px-2 py-0.5 rounded text-[10px] font-black">${p.stock || 0} TOTAL</span>
+                resumen.innerHTML += `
+                    <div class="card-negra">
+                        <div class="flex justify-between border-b border-yellow-500 pb-2 mb-3 italic font-black uppercase text-[11px]">
+                            <span class="text-white">${p.nombre}</span>
+                            <span class="text-yellow-500">${existente} EXISTENTE</span>
                         </div>
-                        <h4 class="text-white font-black text-sm mb-4 truncate">${p.name}</h4>
-                        <div class="max-h-[100px] overflow-y-auto pr-1">${brandTags || '<p class="text-[9px] text-zinc-700 italic">SIN STOCK</p>'}</div>
-                    </div>
-                `;
-
-                if ((p.stock || 0) > 0) {
-                    const waLink = `https://wa.me/${WHATSAPP}?text=Hola! Me gustaría saber disponibilidad de: ${p.name}`;
-                    catalog.innerHTML += `
-                        <div class="card-stats p-6 border-zinc-800 flex flex-col justify-between">
-                            <div>
-                                <div class="flex justify-between mb-4">
-                                    <span class="status-badge bg-yellow-500 text-black">Disponible</span>
-                                    <span class="text-white font-black text-2xl tracking-tighter">$${p.price || p.priceCash || 0}</span>
-                                </div>
-                                <h3 class="text-white font-black text-xl italic uppercase leading-tight mb-4">${p.name}</h3>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-zinc-900 space-y-4">
-                                <a href="${waLink}" target="_blank" class="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[11px] uppercase transition-transform active:scale-95">
-                                    <i class="fab fa-whatsapp text-lg"></i> Consultar
-                                </a>
-                            </div>
+                        <div class="flex justify-between text-[10px] font-black uppercase italic">
+                            <div class="flex flex-col"><span class="text-zinc-500">Cant. Entrante</span><span class="text-green-500 text-lg">${p.entradas || 0}</span></div>
+                            <div class="flex flex-col items-end"><span class="text-zinc-500">Cant. Saliente (Ventas)</span><span class="text-red-500 text-lg">${p.salidas || 0}</span></div>
                         </div>
-                    `;
-                }
+                    </div>`;
             });
         }
 
-        window.deleteProd = async (id) => {
-            if(confirm("¿Eliminar este producto permanentemente?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'items', id));
-            }
-        };
+        function renderizarMarcas() {
+            const lista = document.getElementById('lista-marcas');
+            lista.innerHTML = '';
+            marcas.forEach(m => {
+                lista.innerHTML += `<div class="bg-zinc-900 p-3 rounded-lg border border-zinc-800 flex justify-between text-[10px] font-bold uppercase italic"><span>${m.nombre}</span><button onclick="window.borrar('marcas','${m.id}')">×</button></div>`;
+            });
+        }
 
-        window.deleteBrand = async (id) => {
-            if(confirm("¿Eliminar esta marca de la lista?")) {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'brands', id));
-            }
-        };
+        window.borrar = async (col, id) => { if(confirm("¿Borrar?")) await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', col, id)); };
 
-        window.switchTab = (tab) => {
-            ['view-master', 'view-brands', 'view-entry', 'view-catalog'].forEach(v => document.getElementById(v).classList.add('hidden'));
-            ['btn-master', 'btn-brands', 'btn-entry', 'btn-catalog'].forEach(b => document.getElementById(b).classList.remove('active'));
-            document.getElementById('view-' + tab).classList.remove('hidden');
-            document.getElementById('btn-' + tab).classList.add('active');
+        window.cambiarPestana = (p) => {
+            document.querySelectorAll('.espacio-pestana').forEach(x => x.classList.add('oculto'));
+            document.querySelectorAll('button').forEach(x => { x.classList.remove('tab-activa'); x.classList.add('tab-inactiva'); });
+            document.getElementById('sec-' + p).classList.remove('oculto');
+            const ids = {productos: 't-prod', marcas: 't-marcas', entradas: 't-ent'};
+            document.getElementById(ids[p]).className = 'pb-2 tab-activa';
         };
     </script>
 </body>
