@@ -1,648 +1,356 @@
-```html
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Eagle Mind - Gestión Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eagle Stock - Gestión Maestra</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        :root { --primary: #FFD200; --secondary: #000000; --bg: #F8F9FA; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #1A1A1A; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
-        .header-gradient { background: linear-gradient(135deg, #FFD200 0%, #F5C300 100%); border-radius: 0 0 40px 40px; box-shadow: 0 10px 30px rgba(245, 195, 0, 0.15); }
-        .app-card { background: white; border-radius: 28px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.03); box-shadow: 0 10px 20px rgba(0,0,0,0.02); aspect-ratio: 1/1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-        .app-card:active { transform: scale(0.92); background-color: #f0f0f0; }
-        .nav-bar { position: fixed; bottom: 24px; left: 24px; right: 24px; height: 76px; background: #000; border-radius: 28px; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: flex-end; z-index: 2000; }
-        .modal-content { background: white; width: 100%; border-radius: 40px 40px 0 0; padding: 32px 24px; max-height: 90vh; overflow-y: auto; padding-bottom: 60px; }
-        .input-group { background: #F1F3F5; border-radius: 20px; padding: 16px 20px; margin-bottom: 16px; width: 100%; border: 2px solid transparent; font-size: 16px; font-weight: 500; transition: all 0.2s; }
-        .input-group:focus { border-color: var(--primary); background: white; outline: none; box-shadow: 0 0 0 4px rgba(255, 210, 0, 0.1); }
-        .btn-yellow { background: var(--primary); color: black; font-weight: 800; border-radius: 20px; padding: 18px; width: 100%; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(255, 210, 0, 0.2); }
-        .list-item { background: #F8F9FA; border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid #EEF2F6; display: flex; justify-content: space-between; align-items: center; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp(0.4s cubic-bezier(0.16, 1, 0.3, 1)); }
-        
-        .carousel-container { display: flex; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 300%; }
-        .carousel-item { width: 33.333%; flex-shrink: 0; }
-        .carousel-wrapper { overflow: hidden; width: 100%; border-radius: 30px; }
-        
-        /* Estilos para Notificaciones */
-        .notif-badge { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; border: 2px solid #000; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { background-color: #000; color: #FFD200; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .card-stats { background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 20px; }
+        .input-dark { background: #111; border: 1px solid #222; color: white; border-radius: 12px; padding: 10px; font-size: 13px; width: 100%; }
+        .input-dark:focus { border-color: #FFD200; outline: none; }
+        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.2s; opacity: 0.5; font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 10px 20px; }
+        .tab-btn.active { border-color: #FFD200; color: #FFD200; opacity: 1; }
+        .btn-action { background: #FFD200; color: #000; font-weight: 900; text-transform: uppercase; font-size: 11px; border-radius: 12px; padding: 12px; transition: 0.3s; width: 100%; cursor: pointer; border: none; }
+        .btn-action:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .btn-action:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
+        .status-badge { font-size: 9px; padding: 2px 8px; border-radius: 20px; font-weight: 900; text-transform: uppercase; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     </style>
 </head>
-<body>
-    <div id="app"></div>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-900 pb-6">
+            <div>
+                <h1 class="text-4xl font-black italic tracking-tighter uppercase">Eagle <span class="text-white font-normal">Master</span></h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span id="conn-dot" class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <p id="auth-status" class="text-gray-500 text-[10px] font-bold uppercase tracking-widest italic">Iniciando sistema...</p>
+                </div>
+            </div>
+            <div class="flex bg-zinc-900/50 p-1 rounded-xl overflow-x-auto max-w-full">
+                <button onclick="switchTab('master')" id="btn-master" class="tab-btn active whitespace-nowrap">Maestro de Productos</button>
+                <button onclick="switchTab('brands')" id="btn-brands" class="tab-btn whitespace-nowrap">Lista de Marcas</button>
+                <button onclick="switchTab('entry')" id="btn-entry" class="tab-btn whitespace-nowrap">Entrada Mercancía</button>
+                <button onclick="switchTab('catalog')" id="btn-catalog" class="tab-btn whitespace-nowrap">Catálogo</button>
+            </div>
+        </header>
+
+        <!-- SECCIÓN 1: MAESTRO DE PRODUCTOS -->
+        <div id="view-master" class="space-y-6">
+            <div class="card-stats p-6 border-l-4 border-yellow-500">
+                <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-box mr-2"></i> Registro Maestro de Productos</h2>
+                <form id="master-reg-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-1"><input type="text" id="m-code" placeholder="Código de Producto" class="input-dark" required></div>
+                    <div class="md:col-span-2"><input type="text" id="m-name" placeholder="Nombre del Producto" class="input-dark" required></div>
+                    <div class="md:col-span-1"><input type="number" step="0.01" id="m-cost" placeholder="Costo Unitario $" class="input-dark" required></div>
+                    <input type="number" step="0.01" id="m-price-cash" placeholder="Precio Contado $" class="input-dark" required>
+                    <input type="number" step="0.01" id="m-price-wholesale" placeholder="Precio Mayor $" class="input-dark" required>
+                    <input type="number" step="0.01" id="m-price-credit" placeholder="Precio Crédito $" class="input-dark" required>
+                    <input type="number" step="0.01" id="m-price-credit-wholesale" placeholder="Crédito Mayor $" class="input-dark" required>
+                    <div class="md:col-span-4 mt-2">
+                        <button type="submit" id="btn-save-master" class="btn-action">Guardar en Lista Maestra</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-stats overflow-x-auto">
+                <table class="w-full text-left text-[11px] min-w-[800px]">
+                    <thead class="bg-zinc-900 text-gray-400 uppercase font-black">
+                        <tr>
+                            <th class="p-4">Cód / Producto</th>
+                            <th class="p-4">Costo</th>
+                            <th class="p-4">Precios (Contado/Mayor)</th>
+                            <th class="p-4">Precios (Crédito/Mayor)</th>
+                            <th class="p-4 text-center">Gestión</th>
+                        </tr>
+                    </thead>
+                    <tbody id="master-table-body" class="divide-y divide-zinc-900 italic">
+                        <tr><td colspan="5" class="p-10 text-center text-gray-600 animate-pulse">Sincronizando con nube...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN NUEVA: GESTIÓN DE MARCAS -->
+        <div id="view-brands" class="hidden space-y-6">
+            <div class="card-stats p-6 border-l-4 border-green-500">
+                <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-tags mr-2"></i> Registrar Marcas o Variantes</h2>
+                <form id="brand-reg-form" class="flex gap-4">
+                    <input type="text" id="b-name" placeholder="Escribe el nombre de la marca (Ej: Marca Premium, Marca Económica)" class="input-dark" required>
+                    <button type="submit" class="btn-action w-auto px-10 bg-green-500 text-white">Agregar Marca</button>
+                </form>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="brands-list-container">
+                <!-- Las marcas aparecerán aquí como etiquetas -->
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: ENTRADA DE MERCANCÍA -->
+        <div id="view-entry" class="hidden space-y-6">
+            <div class="card-stats p-6 border-l-4 border-blue-500">
+                <h2 class="text-xs font-black uppercase mb-4 text-white italic"><i class="fas fa-truck-loading mr-2"></i> Ingreso de Unidades al Almacén</h2>
+                <form id="entry-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <select id="e-product-select" class="input-dark" required>
+                        <option value="">-- Seleccione Producto --</option>
+                    </select>
+                    <select id="e-brand-select" class="input-dark" required>
+                        <option value="">-- Seleccione Marca --</option>
+                    </select>
+                    <input type="number" id="e-qty" placeholder="Cantidad" class="input-dark" required>
+                    <button type="submit" id="btn-save-entry" class="btn-action bg-blue-500 text-white font-black">Registrar Entrada</button>
+                </form>
+                <p class="text-[9px] text-zinc-500 mt-2 italic">* Si la marca no aparece, regístrala primero en la pestaña "Lista de Marcas".</p>
+            </div>
+
+            <div class="card-stats p-6">
+                <h2 class="text-xs font-black uppercase mb-6 text-gray-500 italic">Inventario Detallado</h2>
+                <div id="inventory-summary" class="grid grid-cols-1 md:grid-cols-3 gap-6 font-bold uppercase italic"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: CATÁLOGO CLIENTE -->
+        <div id="view-catalog" class="hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="catalog-grid"></div>
+        </div>
+
+    </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, increment, setDoc, getDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCrjjeOoXPOtJDXDfrHLOA4Ny0QW2zfVWk",
-            authDomain: "apps-d45d6.firebaseapp.com",
-            projectId: "apps-d45d6",
-            storageBucket: "apps-d45d6.firebasestorage.app",
-            messagingSenderId: "502648373937",
-            appId: "1:502648373937:web:8c3beaa2a6c9289a4d9890"
-        };
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'eagle-mind-v1';
+        const WHATSAPP = "584120000000"; 
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = "eagle-mind-final";
-        const ADMIN_EMAIL = "eaglemind529@gmail.com";
+        
+        let currentUser = null;
+        let productsCache = [];
+        let brandsCache = [];
 
-        let state = {
-            user: null, userData: null, loading: true,
-            items: [], sales: [], clients: [], expenses: [],
-            allUsers: [], notifications: [],
-            activeModal: null,
-            carouselIndex: 0,
-            editingClientId: null,
-            payingClientId: null,
-            editingSaleId: null,
-            isSyncing: false
-        };
-
-        let unsubscribes = [];
-
-        const fetchData = (userId) => {
-            unsubscribes.forEach(unsub => unsub());
-            unsubscribes = [];
-
-            const userPath = (col) => collection(db, 'artifacts', appId, 'users', userId, col);
-            const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
-            
-            unsubscribes.push(onSnapshot(userPath("items"), (snap) => {
-                state.items = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(userPath("clients"), (snap) => {
-                state.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(userPath("sales"), (snap) => {
-                state.sales = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(userPath("expenses"), (snap) => {
-                state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
-                render();
-            }));
-
-            // Notificaciones Públicas (del Admin)
-            unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => {
-                state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
-                render();
-            }));
-            
-            if(auth.currentUser.email.toLowerCase() === ADMIN_EMAIL) {
-                unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => {
-                    state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                    render();
-                }));
-            }
-        };
-
-        window.handleVenta = async () => {
-            const itemId = document.getElementById('vItem').value;
-            const qty = Number(document.getElementById('vQty').value);
-            const type = document.getElementById('vType').value;
-            const clientId = type === 'credito' ? document.getElementById('vClient').value : null;
-            if(!itemId || qty <= 0) return alert("Datos inválidos");
-            const item = state.items.find(i => i.id === itemId);
-            if(item.stock < qty) return alert("Stock insuficiente");
-            const total = item.price * qty;
-            const totalCost = (item.cost || 0) * qty;
-
+        const startApp = async () => {
             try {
-                const userRef = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
-                const docRef = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-                await addDoc(userRef("sales"), { 
-                    itemId, 
-                    itemName: item.name, 
-                    qty, 
-                    total, 
-                    cost: totalCost, 
-                    type, 
-                    clientId, 
-                    date: new Date().toISOString() 
-                });
-                await updateDoc(docRef("items", itemId), { stock: increment(-qty) });
-                if(type === 'credito' && clientId) await updateDoc(docRef("clients", clientId), { debt: increment(total) });
-                state.activeModal = null;
-                render();
-            } catch (e) { alert("Error"); }
-        };
-
-        window.addItem = async () => {
-            const name = document.getElementById('nItem').value.trim();
-            const code = document.getElementById('nCode').value.trim();
-            const cost = Number(document.getElementById('nCost').value);
-            const price = Number(document.getElementById('nPrice').value);
-            const stock = Number(document.getElementById('nStock').value);
-            
-            if(!name || price <= 0) return alert("Nombre y precio obligatorios");
-
-            try {
-                const existingItem = code ? state.items.find(i => i.code === code) : null;
-                if (existingItem) {
-                    const itemRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", existingItem.id);
-                    await updateDoc(itemRef, {
-                        stock: increment(stock),
-                        cost: cost 
-                    });
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items"), { 
-                        name, 
-                        code, 
-                        cost, 
-                        price, 
-                        stock 
-                    });
+                    await signInAnonymously(auth);
                 }
-                state.activeModal = null;
-            } catch (e) {
-                alert("Error al guardar el producto");
-            }
+            } catch (e) { console.error("Error Auth:", e); }
         };
 
-        window.deleteItem = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id));
-            } catch (e) { alert("Error al eliminar producto"); }
-        };
+        startApp();
 
-        window.addClient = async () => {
-            const name = document.getElementById('cn').value.trim();
-            const code = document.getElementById('cc').value.trim();
-            const phone = document.getElementById('cp').value.trim();
-            if(!name || !code) return alert("Nombre y Código son obligatorios");
-            const clientData = { name, code, phone };
-            try {
-                if(state.editingClientId) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", state.editingClientId), clientData);
-                    state.editingClientId = null;
-                } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients"), { ...clientData, debt: 0 });
-                }
-                state.activeModal = null;
-                render();
-            } catch (e) { alert("Error al procesar cliente"); }
-        };
-
-        window.editClient = (id) => {
-            const client = state.clients.find(c => c.id === id);
-            if(client) {
-                state.editingClientId = id;
-                document.getElementById('cn').value = client.name;
-                document.getElementById('cc').value = client.code;
-                document.getElementById('cp').value = client.phone || '';
-                document.getElementById('btnClientAction').innerText = "Actualizar Cliente";
-            }
-        };
-
-        window.deleteClient = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", id));
-            } catch (e) { alert("Error al eliminar"); }
-        };
-
-        window.addExpense = async () => {
-            const desc = document.getElementById('eDesc').value.trim();
-            const amount = Number(document.getElementById('eAmt').value);
-            if(!desc || amount <= 0) return;
-            await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "expenses"), { desc, amount, date: new Date().toISOString() });
-            state.activeModal = null;
-        };
-
-        window.handleAbono = async (clientIdFromBtn) => {
-            const targetId = clientIdFromBtn || state.payingClientId;
-            const amountInput = document.getElementById(clientIdFromBtn ? `input-abono-${clientIdFromBtn}` : 'aAmt');
-            
-            if(!amountInput) return;
-            const amount = parseFloat(amountInput.value);
-            
-            if(!amount || amount <= 0 || isNaN(amount)) return alert("Ingrese un monto válido");
-            if(!targetId) return alert("Error de sesión de cobro");
-
-            const client = state.clients.find(c => c.id === targetId);
-            if(!client) return alert("Cliente no encontrado");
-            if(amount > (client.debt + 0.01)) return alert("El abono no puede superar la deuda");
-
-            try {
-                const userPath = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
-                const docPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-
-                await updateDoc(docPath("clients", targetId), { 
-                    debt: increment(-amount) 
-                });
-
-                await addDoc(userPath("sales"), {
-                    itemId: "ABONO",
-                    itemName: `Abono: ${client.name}`,
-                    qty: 1,
-                    total: amount,
-                    cost: 0, 
-                    type: 'contado',
-                    date: new Date().toISOString()
-                });
-
-                state.payingClientId = null;
-                state.activeModal = null;
-                render();
-            } catch (e) {
-                console.error(e);
-                alert("Error al procesar abono");
-            }
-        };
-
-        window.editVenta = (id) => {
-            state.editingSaleId = id;
-            render();
-        };
-
-        window.saveEditedVenta = async (saleId) => {
-            const sale = state.sales.find(s => s.id === saleId);
-            const newQty = Number(document.getElementById('editVQty').value);
-            const newTotal = Number(document.getElementById('editVTotal').value);
-            const newUnitCost = Number(document.getElementById('editVCost').value);
-            
-            if(!newQty || newQty < 0) return alert("Cantidad inválida");
-
-            try {
-                const userDocPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-status').innerText = `SISTEMA ACTIVO: ${user.uid.substring(0,8)}`;
+                document.getElementById('conn-dot').classList.replace('bg-red-500', 'bg-green-500');
                 
-                if(newQty !== sale.qty && sale.itemId !== "ABONO") {
-                    const diff = sale.qty - newQty; 
-                    await updateDoc(userDocPath("items", sale.itemId), { stock: increment(diff) });
-                }
+                // Escuchar Productos
+                const itemsRef = collection(db, 'artifacts', appId, 'users', user.uid, 'master_products');
+                onSnapshot(itemsRef, (snap) => {
+                    productsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderAll();
+                });
 
-                if(sale.type === 'credito' && sale.clientId && newTotal !== sale.total) {
-                    const diffDeuda = newTotal - sale.total;
-                    await updateDoc(userDocPath("clients", sale.clientId), { debt: increment(diffDeuda) });
-                }
-
-                const updatedData = { 
-                    qty: newQty, 
-                    total: newTotal,
-                    cost: newUnitCost * newQty 
-                };
-
-                await updateDoc(userDocPath("sales", saleId), updatedData);
-                state.editingSaleId = null;
-                render();
-            } catch (e) {
-                alert("Error al actualizar venta");
+                // Escuchar Marcas
+                const brandsRef = collection(db, 'artifacts', appId, 'users', user.uid, 'brands_list');
+                onSnapshot(brandsRef, (snap) => {
+                    brandsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderBrands();
+                    updateEntryBrandSelect();
+                });
             }
-        };
-
-        window.sincronizarCostos = async () => {
-            if (state.isSyncing) return;
-            state.isSyncing = true;
-            render();
-
-            try {
-                const batch = writeBatch(db);
-                let count = 0;
-
-                for (const sale of state.sales) {
-                    if (sale.itemId && sale.itemId !== "ABONO") {
-                        const currentItem = state.items.find(i => i.id === sale.itemId);
-                        if (currentItem && (currentItem.cost || currentItem.cost === 0)) {
-                            const saleCost = sale.cost || 0;
-                            const targetCost = Number(currentItem.cost) * Number(sale.qty);
-                            
-                            if (saleCost === 0 && targetCost > 0) {
-                                const saleRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "sales", sale.id);
-                                batch.update(saleRef, { cost: targetCost });
-                                count++;
-                            }
-                        }
-                    }
-                }
-
-                if (count > 0) {
-                    await batch.commit();
-                    console.log(`Sincronización completa: ${count} ventas actualizadas.`);
-                }
-            } catch (e) {
-                console.error("Error en sincronización:", e);
-            } finally {
-                state.isSyncing = false;
-                render();
-            }
-        };
-
-        window.sendNotification = async () => {
-            const title = document.getElementById('notifTitle').value.trim();
-            const msg = document.getElementById('notifMsg').value.trim();
-            if(!title || !msg) return alert("Complete los campos");
-
-            try {
-                const publicPath = collection(db, 'artifacts', appId, 'public', 'data', 'notifications');
-                await addDoc(publicPath, { title, message: msg, date: new Date().toISOString() });
-                alert("Notificación enviada");
-                document.getElementById('notifTitle').value = "";
-                document.getElementById('notifMsg').value = "";
-            } catch (e) { alert("Error al enviar"); }
-        };
-
-        window.deleteNotification = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
-            } catch (e) { alert("Error al eliminar"); }
-        };
-
-        window.toggleUserStatus = async (uid, currentStatus) => {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', uid), { approved: !currentStatus });
-        };
-
-        window.logout = () => {
-            signOut(auth).then(() => {
-                state.user = null;
-                state.userData = null;
-                state.loading = false;
-                render();
-                location.reload();
-            });
-        };
-
-        window.setModal = (m) => { 
-            state.activeModal = m; 
-            if(m !== 'clientes') state.editingClientId = null;
-            if(m !== 'deudas') state.payingClientId = null;
-            if(m !== 'historial') state.editingSaleId = null;
-            render(); 
-        };
-
-        function calcularCaja() {
-            const v = state.sales.filter(s => s.type === 'contado').reduce((acc, s) => acc + Number(s.total), 0);
-            const e = state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
-            return (v - e).toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        function calcularDeudas() {
-            return state.clients.reduce((acc, client) => acc + Number(client.debt || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        function calcularGastos() {
-            return state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        function calcularGanancias() {
-            const cobrosEfectivos = state.sales.filter(s => s.type === 'contado');
-            const ingresosCobrados = cobrosEfectivos.reduce((acc, s) => acc + Number(s.total), 0);
-            const costosProductosCobrados = cobrosEfectivos
-                .filter(s => s.itemId !== "ABONO")
-                .reduce((acc, s) => acc + Number(s.cost || 0), 0);
-            const gastosOperativos = state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
-            const gananciaNeta = (ingresosCobrados - costosProductosCobrados) - gastosOperativos;
-            return gananciaNeta.toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        let touchStartX = 0;
-        window.handleTouchStart = (e) => { touchStartX = e.changedTouches[0].screenX; };
-        window.handleTouchEnd = (e) => {
-            let touchEndX = e.changedTouches[0].screenX;
-            if (touchStartX - touchEndX > 50) {
-                if (state.carouselIndex < 2) state.carouselIndex++;
-            }
-            if (touchEndX - touchStartX > 50) {
-                if (state.carouselIndex > 0) state.carouselIndex--;
-            }
-            render();
-        };
-
-        function render() {
-            const root = document.getElementById('app');
-            if (state.loading) {
-                root.innerHTML = `<div class="h-screen flex items-center justify-center bg-white"><div class="flex flex-col items-center"><div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500 mb-4"></div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargando...</p></div></div>`;
-                return;
-            }
-            if (!state.user) { renderLogin(root); return; }
-            const isAdm = state.user.email.toLowerCase() === ADMIN_EMAIL;
-            if (state.userData && !state.userData.approved && !isAdm) {
-                root.innerHTML = `<div class="h-screen flex flex-col items-center justify-center px-10 text-center bg-white"><div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mb-8"><i class="fas fa-lock text-amber-500 text-4xl"></i></div><h2 class="text-3xl font-black mb-4 uppercase tracking-tighter">Acceso Pendiente</h2><p class="text-slate-400 text-base leading-relaxed">Tu cuenta <b>${state.user.email}</b> espera aprobación.</p><button onclick="window.logout()" class="btn-yellow mt-10">Cerrar Sesión</button></div>`;
-                return;
-            }
-            const caja = calcularCaja();
-            const deudas = calcularDeudas();
-            const gastos = calcularGastos();
-            const ganancias = calcularGanancias();
-
-            root.innerHTML = `
-            <div class="pb-36">
-                <header class="header-gradient pt-16 pb-12 px-8 flex justify-between items-end relative">
-                    <div><h2 class="text-black font-black text-3xl uppercase tracking-tighter">EXITO</h2><p class="text-black/50 text-[11px] font-bold tracking-widest uppercase mt-2">Gestión Privada</p></div>
-                    <div class="flex gap-3">
-                        <button onclick="window.setModal('avisos')" class="w-14 h-14 bg-black/10 rounded-2xl flex items-center justify-center relative">
-                            <i class="fas fa-bell text-black text-lg"></i>
-                            ${state.notifications.length > 0 ? '<div class="notif-badge"></div>' : ''}
-                        </button>
-                        <button onclick="window.logout()" class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg"><i class="fas fa-power-off text-white text-lg"></i></button>
-                    </div>
-                </header>
-                <div class="px-6 -mt-10 flex flex-col gap-4">
-                    <div class="bg-black rounded-[35px] p-8 shadow-2xl flex justify-between items-center text-white relative overflow-hidden">
-                        <div class="relative z-10"><p class="text-white/40 text-[11px] font-bold uppercase tracking-widest">En Caja (Efectivo)</p><h3 class="text-white text-3xl font-black mt-2 tracking-tighter">$ ${caja}</h3></div>
-                        <div class="w-16 h-16 bg-[#FFD200] rounded-3xl flex items-center justify-center shadow-2xl relative z-10"><i class="fas fa-wallet text-black text-2xl"></i></div>
-                    </div>
-                    
-                    <div class="carousel-wrapper" ontouchstart="window.handleTouchStart(event)" ontouchend="window.handleTouchEnd(event)">
-                        <div class="carousel-container" style="transform: translateX(-${state.carouselIndex * 33.333}%);">
-                            <div class="carousel-item">
-                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mr-2">
-                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Dinero en la Calle</p><h3 class="text-rose-600 text-2xl font-black mt-1">$ ${deudas}</h3></div>
-                                    <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500"><i class="fas fa-hand-holding-dollar text-xl"></i></div>
-                                </div>
-                            </div>
-                            <div class="carousel-item">
-                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mx-1">
-                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Gastos Totales</p><h3 class="text-orange-600 text-2xl font-black mt-1">$ ${gastos}</h3></div>
-                                    <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500"><i class="fas fa-receipt text-xl"></i></div>
-                                </div>
-                            </div>
-                            <div class="carousel-item">
-                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center ml-2">
-                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Ganancia Real</p><h3 class="text-emerald-600 text-2xl font-black mt-1">$ ${ganancias}</h3></div>
-                                    <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500"><i class="fas fa-chart-line text-xl"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <main class="p-6 grid grid-cols-3 gap-5 mt-4">
-                    <div onclick="window.setModal('venta')" class="app-card"><i class="fas fa-cart-plus text-blue-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Venta</p></div>
-                    <div onclick="window.abrirInventarioPro()" class="app-card"><i class="fas fa-box-open text-emerald-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Stock</p></div>
-                    <div onclick="window.setModal('clientes')" class="app-card"><i class="fas fa-user-tag text-rose-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Clientes</p></div>
-                    <div onclick="window.setModal('egresos')" class="app-card"><i class="fas fa-receipt text-orange-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Gastos</p></div>
-                    <div onclick="window.setModal('historial')" class="app-card"><i class="fas fa-list-ul text-purple-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Historial</p></div>
-                    <div onclick="window.setModal('deudas')" class="app-card"><i class="fas fa-money-bill-transfer text-amber-600 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Cobros</p></div>
-                    ${isAdm ? `<div onclick="window.setModal('admin')" class="app-card bg-slate-900 border-none text-white col-span-3 aspect-auto py-5 flex-row gap-4"><i class="fas fa-user-shield text-[#FFD200] text-xl"></i><p class="text-[11px] font-black tracking-widest uppercase">Panel de Control</p></div>` : ''}
-                </main>
-                <nav class="nav-bar">
-                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-[#FFD200]"><i class="fas fa-home text-xl"></i></div>
-                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-chart-pie text-xl"></i></div>
-                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-cog text-xl"></i></div>
-                </nav>
-            </div>
-            ${state.activeModal ? renderModal() : ''}`;
-        }
-
-        function renderModal() {
-            const m = state.activeModal;
-            const isAdm = state.user.email.toLowerCase() === ADMIN_EMAIL;
-            let html = '';
-            
-            if(m === 'venta') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Nueva Venta</h2><select id="vItem" class="input-group">${state.items.map(i => `<option value="${i.id}">${i.name} ($${i.price})</option>`)}</select><input id="vQty" type="number" class="input-group" value="1"><select id="vType" class="input-group" onchange="document.getElementById('divClient').style.display = this.value === 'credito' ? 'block' : 'none'"><option value="contado">💵 Efectivo</option><option value="credito">⏳ Crédito</option></select><div id="divClient" style="display:none"><select id="vClient" class="input-group">${state.clients.map(c => `<option value="${c.id}">${c.name}</option>`)}</select></div><button onclick="window.handleVenta()" class="btn-yellow mt-4">Confirmar</button>`;
-            } else if(m === 'inventario') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Stock</h2><div class="space-y-3 mb-8 max-h-40 overflow-y-auto">${state.items.map(i => `
-                    <div class="list-item">
-                        <div><p class="font-bold">${i.name} <span class="text-[10px] text-slate-400 font-normal ml-2">#${i.code || 'S/C'}</span></p><p class="text-emerald-600 font-black">${i.stock} ud - $${i.price} <span class="text-slate-400 font-normal text-[10px] ml-2">(Costo: $${i.cost || 0})</span></p></div>
-                        <button onclick="window.deleteItem('${i.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can text-sm"></i></button>
-                    </div>`).join('')}</div><input id="nItem" type="text" placeholder="Producto" class="input-group"><input id="nCode" type="text" placeholder="Código de Producto" class="input-group"><input id="nCost" type="number" placeholder="Costo Unitario" class="input-group"><input id="nPrice" type="number" placeholder="Precio de Venta" class="input-group"><input id="nStock" type="number" placeholder="Stock Inicial" class="input-group"><button onclick="window.addItem()" class="btn-yellow">Añadir</button>`;
-            } else if(m === 'admin') {
-                html = `
-                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter text-slate-900">Administración</h2>
-                <div class="bg-slate-50 p-6 rounded-[30px] mb-8">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Enviar Notificación Global</p>
-                    <input id="notifTitle" type="text" placeholder="Título del aviso" class="input-group" style="background:white">
-                    <textarea id="notifMsg" placeholder="Mensaje para los usuarios" class="input-group h-24" style="background:white"></textarea>
-                    <button onclick="window.sendNotification()" class="btn-yellow">Publicar Aviso</button>
-                </div>
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Usuarios Registrados</h3>
-                <div class="space-y-3 max-h-48 overflow-y-auto">${state.allUsers.map(u => `<div class="list-item"><div><p class="text-xs font-black">${u.email}</p><p class="text-[9px] font-bold ${u.approved ? 'text-emerald-500' : 'text-amber-500'} uppercase">${u.approved ? 'Autorizado' : 'Pendiente'}</p></div><button onclick="window.toggleUserStatus('${u.id}', ${u.approved})" class="px-4 py-2 ${u.approved ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} rounded-xl text-[10px] font-black uppercase">${u.approved ? 'Bloquear' : 'Aprobar'}</button></div>`).join('')}</div>`;
-            } else if(m === 'clientes') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Clientes</h2><div class="space-y-3 mb-6 max-h-60 overflow-y-auto">${state.clients.map(c => `
-                    <div class="list-item">
-                        <div class="flex-grow"><p class="font-bold">${c.name} <span class="text-[10px] text-slate-400 font-normal ml-2">#${c.code || 'S/C'}</span></p><p class="text-rose-600 text-[11px] font-black uppercase">Deuda: $${(c.debt || 0).toFixed(2)}</p></div>
-                        <div class="flex gap-2">
-                            <button onclick="window.editClient('${c.id}')" class="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-edit text-sm"></i></button>
-                            <button onclick="window.deleteClient('${c.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can text-sm"></i></button>
-                        </div>
-                    </div>`).join('')}</div><div class="border-t border-slate-100 pt-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Registro / Edición</p><input id="cn" type="text" placeholder="Nombre Completo" class="input-group"><input id="cc" type="text" placeholder="Código de Cliente" class="input-group"><input id="cp" type="tel" placeholder="Número de Teléfono" class="input-group"><button id="btnClientAction" onclick="window.addClient()" class="btn-yellow">Guardar Cliente</button>${state.editingClientId ? `<button onclick="state.editingClientId=null; render();" class="w-full mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cancelar Edición</button>` : ''}</div>`;
-            } else if(m === 'egresos') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Gasto</h2><input id="eDesc" type="text" placeholder="Concepto" class="input-group"><input id="eAmt" type="number" placeholder="Monto" class="input-group"><button onclick="window.addExpense()" class="btn-yellow">Guardar</button>`;
-            } else if(m === 'historial') {
-                if(state.editingSaleId) {
-                    const s = state.sales.find(sale => sale.id === state.editingSaleId);
-                    const unitCost = s.qty > 0 ? (s.cost / s.qty) : (s.cost || 0);
-                    html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Editar Venta</h2><p class="text-xs font-bold text-slate-400 mb-4">${s.itemName}</p><div class="space-y-4"><label class="text-[10px] font-black uppercase">Cantidad</label><input id="editVQty" type="number" class="input-group" value="${s.qty}"><label class="text-[10px] font-black uppercase">Costo Unitario ($)</label><input id="editVCost" type="number" class="input-group" value="${unitCost}"><label class="text-[10px] font-black uppercase">Total Venta ($)</label><input id="editVTotal" type="number" class="input-group" value="${s.total}"><button onclick="window.saveEditedVenta('${s.id}')" class="btn-yellow">Actualizar</button><button onclick="state.editingSaleId=null; render();" class="w-full mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cancelar</button></div>`;
-                } else {
-                    html = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-black uppercase tracking-tighter">Ventas</h2><button onclick="window.sincronizarCostos()" class="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><i class="fas fa-sync-alt ${state.isSyncing ? 'animate-spin' : ''}"></i>${state.isSyncing ? 'Sincronizando' : 'Sincronizar'}</button></div><div class="space-y-3 max-h-80 overflow-y-auto">${state.sales.map(s => `<div class="list-item"><div><p class="text-sm font-bold">${s.itemName}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(s.date).toLocaleDateString()} - ${s.type === 'credito' ? '⏳ Crédito' : '💵 Efectivo'}</p></div><div class="flex items-center gap-3"><span class="text-emerald-600 font-black">$${s.total.toFixed(2)}</span><button onclick="window.editVenta('${s.id}')" class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-pen text-[10px]"></i></button></div></div>`).join('')}</div>`;
-                }
-            } else if(m === 'avisos') {
-                html = `
-                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Notificaciones</h2>
-                <div class="space-y-4 max-h-96 overflow-y-auto">
-                    ${state.notifications.map(n => `
-                        <div class="bg-slate-50 border border-slate-100 p-5 rounded-[28px] relative">
-                            <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">${new Date(n.date).toLocaleDateString()}</p>
-                            <h4 class="text-base font-black mb-1 uppercase tracking-tighter">${n.title}</h4>
-                            <p class="text-sm text-slate-500 leading-relaxed">${n.message}</p>
-                            ${isAdm ? `<button onclick="window.deleteNotification('${n.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-colors"><i class="fas fa-times-circle"></i></button>` : ''}
-                        </div>
-                    `).join('')}
-                    ${state.notifications.length === 0 ? '<p class="text-center text-slate-300 font-bold py-10 uppercase text-xs tracking-widest">Sin avisos nuevos</p>' : ''}
-                </div>`;
-            } else if(m === 'deudas') {
-                const payingClient = state.clients.find(c => c.id === state.payingClientId);
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Cobros</h2>${state.payingClientId ? `<div class="bg-amber-50 rounded-3xl p-6 mb-6"><p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Abonar a:</p><p class="text-xl font-black mb-1">${payingClient.name}</p><p class="text-rose-600 font-bold text-sm mb-4">Deuda Actual: $${payingClient.debt.toFixed(2)}</p><input id="aAmt" type="number" placeholder="Monto a abonar" class="input-group" style="background:white"><button onclick="window.handleAbono()" class="btn-yellow">Confirmar Abono</button><button onclick="state.payingClientId=null; render();" class="w-full mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Regresar a la lista</button></div>` : `<div class="space-y-3 max-h-80 overflow-y-auto">${state.clients.filter(c => c.debt > 0).map(c => `<div class="list-item flex-col items-stretch gap-3"><div class="flex justify-between items-center"><div class="flex-grow"><p class="font-bold">${c.name}</p><p class="text-rose-600 font-black">$${c.debt.toFixed(2)}</p></div><button onclick="window.deleteClient('${c.id}')" class="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can"></i></button></div><div class="flex gap-2"><input id="input-abono-${c.id}" type="number" placeholder="Monto" class="flex-grow bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold outline-none focus:border-amber-400"><div onclick="window.handleAbono('${c.id}')" class="px-4 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer text-[10px] font-black tracking-widest">ABONO</div></div></div>`).join('')}${state.clients.filter(c => c.debt > 0).length === 0 ? '<p class="text-center text-slate-300 font-bold py-10 uppercase text-xs tracking-widest">No hay deudas pendientes</p>' : ''}</div>`}`;
-            }
-            return `<div class="modal" onclick="if(event.target === this) window.setModal(null)"><div class="modal-content animate-slide-up"><div class="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" onclick="window.setModal(null)"></div>${html}<button onclick="window.setModal(null)" class="w-full mt-8 text-slate-300 font-black uppercase text-[11px] tracking-widest">Cerrar</button></div></div>`;
-        }
-
-        function renderLogin(root) {
-            root.innerHTML = `<div class="h-screen flex flex-col justify-center px-10 bg-white"><div class="w-24 h-24 header-gradient rounded-[32px] mx-auto mb-8 flex items-center justify-center shadow-2xl rotate-3"><i class="fas fa-eagle text-black text-4xl"></i></div><h1 class="text-4xl font-black text-center mb-2 tracking-tighter italic">Eagle Mind</h1><p class="text-center text-slate-400 text-[11px] font-bold uppercase tracking-[0.3em] mb-12">Private Edition Pro</p><input id="email" type="email" placeholder="Correo electrónico" class="input-group"><input id="pass" type="password" placeholder="Contraseña" class="input-group"><button id="btnLogin" onclick="window.handleLogin()" class="btn-yellow mt-6">Acceder</button><div class="relative flex py-10 items-center"><div class="flex-grow border-t border-slate-100"></div><span class="mx-4 text-slate-300 text-[10px] font-bold uppercase">Registro</span><div class="flex-grow border-t border-slate-100"></div></div><button id="btnReg" onclick="window.handleRegister()" class="w-full py-5 border-2 border-slate-100 rounded-[22px] text-slate-400 font-black text-[11px] uppercase active:bg-slate-50">Solicitar Acceso</button></div>`;
-        }
-
-        window.handleLogin = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('pass').value;
-            if(!email || !pass) return;
-            document.getElementById('btnLogin').innerText = "ENTRANDO...";
-            try { await signInWithEmailAndPassword(auth, email, pass); } catch(err) { alert("Error de acceso"); document.getElementById('btnLogin').innerText = "ACCEDER"; }
-        };
-
-        window.handleRegister = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('pass').value;
-            if(!email || pass.length < 6) return alert("Datos insuficientes");
-            document.getElementById('btnReg').innerText = "REGISTRANDO...";
-            try { 
-                const res = await createUserWithEmailAndPassword(auth, email, pass);
-                const isAdm = email.toLowerCase() === ADMIN_EMAIL;
-                await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid), { email, approved: isAdm });
-                alert(isAdm ? "Admin Creado" : "Solicitud enviada");
-            } catch(err) { alert("Error"); document.getElementById('btnReg').innerText = "SOLICITAR ACCESO"; }
-        };
-
-        onAuthStateChanged(auth, async (u) => { 
-            state.user = u; 
-            if(u) {
-                const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', u.uid));
-                state.userData = userDoc.exists() ? userDoc.data() : null;
-                fetchData(u.uid);
-            }
-            state.loading = false; 
-            render(); 
         });
 
-        // ==========================================
-        // SECCIÓN PUENTE: INTEGRACIÓN INVENTARIO PRO
-        // ==========================================
-        
-        window.abrirInventarioPro = () => {
-            // Esta función "secuestra" el flujo normal para abrir tu sistema avanzado.
-            // Primero, buscamos si el contenedor del inventario ya existe.
-            let container = document.getElementById('inventario-pro-root');
-            if(!container) {
-                container = document.createElement('div');
-                container.id = 'inventario-pro-root';
-                container.style.cssText = 'position:fixed; inset:0; z-index:5000; background:white; display:none;';
-                document.body.appendChild(container);
-            }
+        // GUARDAR MARCA
+        document.getElementById('brand-reg-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const name = document.getElementById('b-name').value.toUpperCase().trim();
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'brands_list'), { name, createdAt: serverTimestamp() });
+                e.target.reset();
+            } catch(e) { console.error(e); }
+        };
+
+        // GUARDAR PRODUCTO MAESTRO
+        document.getElementById('master-reg-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const btn = document.getElementById('btn-save-master');
+            btn.disabled = true;
+
+            try {
+                const data = {
+                    code: document.getElementById('m-code').value.toUpperCase().trim(),
+                    name: document.getElementById('m-name').value.trim(),
+                    cost: Number(document.getElementById('m-cost').value),
+                    priceCash: Number(document.getElementById('m-price-cash').value),
+                    priceWholesale: Number(document.getElementById('m-price-wholesale').value),
+                    priceCredit: Number(document.getElementById('m-price-credit').value),
+                    priceCreditWholesale: Number(document.getElementById('m-price-credit-wholesale').value),
+                    stock: 0,
+                    brands: {},
+                    updatedAt: serverTimestamp()
+                };
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'master_products'), data);
+                e.target.reset();
+            } catch (err) { console.error(err); }
+            finally { btn.disabled = false; }
+        };
+
+        // REGISTRAR ENTRADA
+        document.getElementById('entry-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if(!currentUser) return;
+            const prodId = document.getElementById('e-product-select').value;
+            const brand = document.getElementById('e-brand-select').value;
+            const qty = Number(document.getElementById('e-qty').value);
             
-            // Aquí llamaríamos a la carga de tu archivo 'inventario.html' o similar.
-            // Por ahora, activamos la visualización.
-            container.style.display = 'block';
-            
-            // Si el archivo ya está en el servidor, lo inyectamos:
-            fetch('inventario.html')
-                .then(response => response.text())
-                .then(html => {
-                    container.innerHTML = html;
-                    // Ejecutamos manualmente los scripts del nuevo archivo si es necesario.
-                })
-                .catch(err => {
-                    console.log("Cargando interfaz dinámica...");
-                    // Fallback: mostrar un mensaje de carga si el archivo no está listo.
-                    container.innerHTML = `<div class="h-screen flex items-center justify-center">
-                        <div class="text-center">
-                            <div class="animate-spin h-10 w-10 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-                            <p class="font-bold uppercase text-xs tracking-widest">Conectando Inventario Pro...</p>
-                        </div>
-                    </div>`;
+            if(!prodId || !brand) return;
+
+            try {
+                const p = productsCache.find(x => x.id === prodId);
+                const newBrands = { ...(p.brands || {}) };
+                newBrands[brand] = (newBrands[brand] || 0) + qty;
+                
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'master_products', prodId), {
+                    brands: newBrands,
+                    stock: (p.stock || 0) + qty
                 });
+                e.target.reset();
+            } catch (err) { console.error(err); }
         };
 
-        // Función para cerrar y volver al Eagle Mind original
-        window.cerrarInventarioPro = () => {
-            const container = document.getElementById('inventario-pro-root');
-            if(container) container.style.display = 'none';
+        function renderBrands() {
+            const container = document.getElementById('brands-list-container');
+            container.innerHTML = '';
+            brandsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(b => {
+                container.innerHTML += `
+                    <div class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex justify-between items-center group">
+                        <span class="text-[10px] font-black uppercase text-gray-300">${b.name}</span>
+                        <button onclick="deleteBrand('${b.id}')" class="text-zinc-700 hover:text-red-500 transition-colors">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function updateEntryBrandSelect() {
+            const select = document.getElementById('e-brand-select');
+            select.innerHTML = '<option value="">-- Seleccione Marca --</option>';
+            brandsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(b => {
+                select.innerHTML += `<option value="${b.name}">${b.name}</option>`;
+            });
+        }
+
+        function renderAll() {
+            const table = document.getElementById('master-table-body');
+            const select = document.getElementById('e-product-select');
+            const summary = document.getElementById('inventory-summary');
+            const catalog = document.getElementById('catalog-grid');
+
+            table.innerHTML = '';
+            summary.innerHTML = '';
+            catalog.innerHTML = '';
+            select.innerHTML = '<option value="">-- Seleccione Producto --</option>';
+
+            productsCache.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
+                table.innerHTML += `
+                    <tr class="hover:bg-zinc-900/40 border-b border-zinc-900">
+                        <td class="p-4">
+                            <span class="text-yellow-500 text-[9px] block font-mono">${p.code}</span>
+                            <span class="text-white font-black uppercase text-xs">${p.name}</span>
+                        </td>
+                        <td class="p-4 text-blue-400 font-black">$${(p.cost || 0).toFixed(2)}</td>
+                        <td class="p-4">
+                            <div class="text-white">$${p.priceCash} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceWholesale}</span></div>
+                        </td>
+                        <td class="p-4">
+                            <div class="text-white font-bold">$${p.priceCredit} <span class="text-zinc-600">/</span> <span class="text-zinc-500">$${p.priceCreditWholesale}</span></div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <button onclick="deleteProd('${p.id}')" class="text-rose-600 hover:text-white transition-colors"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                `;
+
+                select.innerHTML += `<option value="${p.id}">${p.code} - ${p.name}</option>`;
+
+                const brandTags = Object.entries(p.brands || {}).map(([b, q]) => `
+                    <div class="flex justify-between items-center text-[10px] bg-black/40 p-2 rounded-lg mb-1">
+                        <span class="text-zinc-500 font-bold tracking-widest">${b}</span>
+                        <span class="text-yellow-500 font-black">${q}</span>
+                    </div>
+                `).join('');
+
+                summary.innerHTML += `
+                    <div class="bg-zinc-900/40 p-5 rounded-2xl border border-zinc-800">
+                        <div class="flex justify-between items-center mb-4 border-b border-zinc-800 pb-2">
+                            <span class="text-[9px] text-zinc-600">${p.code}</span>
+                            <span class="bg-yellow-500 text-black px-2 py-0.5 rounded text-[10px] font-black">${p.stock || 0} TOTAL</span>
+                        </div>
+                        <h4 class="text-white font-black text-sm mb-4 truncate">${p.name}</h4>
+                        <div class="max-h-[100px] overflow-y-auto pr-1">${brandTags || '<p class="text-[9px] text-zinc-700 italic">SIN STOCK</p>'}</div>
+                    </div>
+                `;
+
+                if ((p.stock || 0) > 0) {
+                    const waLink = `https://wa.me/${WHATSAPP}?text=Hola! Me gustaría saber disponibilidad de: ${p.name}`;
+                    catalog.innerHTML += `
+                        <div class="card-stats p-6 border-zinc-800 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between mb-4">
+                                    <span class="status-badge bg-yellow-500 text-black">Disponible</span>
+                                    <span class="text-white font-black text-2xl tracking-tighter">$${p.priceCash}</span>
+                                </div>
+                                <h3 class="text-white font-black text-xl italic uppercase leading-tight mb-4">${p.name}</h3>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-zinc-900 space-y-4">
+                                <a href="${waLink}" target="_blank" class="flex items-center justify-center gap-2 w-full bg-[#25D366] text-white py-4 rounded-xl font-black text-[11px] uppercase transition-transform active:scale-95">
+                                    <i class="fab fa-whatsapp text-lg"></i> Consultar
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        window.deleteProd = async (id) => {
+            if(confirm("¿Eliminar este producto permanentemente?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'master_products', id));
+            }
         };
 
+        window.deleteBrand = async (id) => {
+            if(confirm("¿Eliminar esta marca de la lista?")) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'brands_list', id));
+            }
+        };
+
+        window.switchTab = (tab) => {
+            ['view-master', 'view-brands', 'view-entry', 'view-catalog'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            ['btn-master', 'btn-brands', 'btn-entry', 'btn-catalog'].forEach(b => document.getElementById(b).classList.remove('active'));
+            document.getElementById('view-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).classList.add('active');
+        };
     </script>
 </body>
 </html>
-
 
 ```
