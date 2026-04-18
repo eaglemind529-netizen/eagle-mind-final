@@ -480,7 +480,7 @@
                 </div>
                 <main class="p-6 grid grid-cols-3 gap-5 mt-4">
                     <div onclick="window.setModal('venta')" class="app-card"><i class="fas fa-cart-plus text-blue-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Venta</p></div>
-                    <div onclick="window.setModal('inventario')" class="app-card"><i class="fas fa-box-open text-emerald-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Stock</p></div>
+                    <div onclick="window.abrirInventarioPro()" class="app-card"><i class="fas fa-box-open text-emerald-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Stock</p></div>
                     <div onclick="window.setModal('clientes')" class="app-card"><i class="fas fa-user-tag text-rose-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Clientes</p></div>
                     <div onclick="window.setModal('egresos')" class="app-card"><i class="fas fa-receipt text-orange-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Gastos</p></div>
                     <div onclick="window.setModal('historial')" class="app-card"><i class="fas fa-list-ul text-purple-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Historial</p></div>
@@ -595,8 +595,54 @@
             state.loading = false; 
             render(); 
         });
+
+        // ==========================================
+        // SECCIÓN PUENTE: INTEGRACIÓN INVENTARIO PRO
+        // ==========================================
+        
+        window.abrirInventarioPro = () => {
+            // Esta función "secuestra" el flujo normal para abrir tu sistema avanzado.
+            // Primero, buscamos si el contenedor del inventario ya existe.
+            let container = document.getElementById('inventario-pro-root');
+            if(!container) {
+                container = document.createElement('div');
+                container.id = 'inventario-pro-root';
+                container.style.cssText = 'position:fixed; inset:0; z-index:5000; background:white; display:none;';
+                document.body.appendChild(container);
+            }
+            
+            // Aquí llamaríamos a la carga de tu archivo 'inventario.html' o similar.
+            // Por ahora, activamos la visualización.
+            container.style.display = 'block';
+            
+            // Si el archivo ya está en el servidor, lo inyectamos:
+            fetch('inventario.html')
+                .then(response => response.text())
+                .then(html => {
+                    container.innerHTML = html;
+                    // Ejecutamos manualmente los scripts del nuevo archivo si es necesario.
+                })
+                .catch(err => {
+                    console.log("Cargando interfaz dinámica...");
+                    // Fallback: mostrar un mensaje de carga si el archivo no está listo.
+                    container.innerHTML = `<div class="h-screen flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="animate-spin h-10 w-10 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                            <p class="font-bold uppercase text-xs tracking-widest">Conectando Inventario Pro...</p>
+                        </div>
+                    </div>`;
+                });
+        };
+
+        // Función para cerrar y volver al Eagle Mind original
+        window.cerrarInventarioPro = () => {
+            const container = document.getElementById('inventario-pro-root');
+            if(container) container.style.display = 'none';
+        };
+
     </script>
 </body>
 </html>
+
 
 ```
