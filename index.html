@@ -34,7 +34,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, increment, setDoc, getDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, increment, setDoc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -58,7 +58,7 @@
             allUsers: [], notifications: [],
             activeModal: null, carouselIndex: 0,
             editingClientId: null, payingClientId: null,
-            editingSaleId: null, isSyncing: false
+            editingSaleId: null
         };
 
         let unsubscribes = [];
@@ -158,13 +158,16 @@
         const fetchData = (userId) => {
             unsubscribes.forEach(unsub => unsub());
             unsubscribes = [];
+            
             const userPath = (col) => collection(db, 'artifacts', appId, 'users', userId, col);
             const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
+            
             unsubscribes.push(onSnapshot(userPath("items"), (snap) => { state.items = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
             unsubscribes.push(onSnapshot(userPath("clients"), (snap) => { state.clients = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
             unsubscribes.push(onSnapshot(userPath("sales"), (snap) => { state.sales = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
             unsubscribes.push(onSnapshot(userPath("expenses"), (snap) => { state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
             unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => { state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
+            
             if(auth.currentUser.email.toLowerCase() === ADMIN_EMAIL) {
                 unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => { state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
             }
@@ -185,8 +188,8 @@
             const cobrosEfectivos = (state.sales || []).filter(s => s.type === 'contado');
             const ingresos = cobrosEfectivos.reduce((acc, s) => acc + Number(s.total || 0), 0);
             const costos = cobrosEfectivos.filter(s => s.itemId !== "ABONO").reduce((acc, s) => acc + Number(s.cost || 0), 0);
-            const gastos = (state.expenses || []).reduce((acc, exp) => acc + Number(exp.amount || 0), 0);
-            return (ingresos - costos - gastos).toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const gastosV = (state.expenses || []).reduce((acc, exp) => acc + Number(exp.amount || 0), 0);
+            return (ingresos - costos - gastosV).toLocaleString('en-US', { minimumFractionDigits: 2 });
         }
         function calcularVentasTotales() {
             return (state.sales || []).reduce((acc, s) => acc + Number(s.total || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
@@ -209,7 +212,7 @@
             const clientId = type === 'credito' ? document.getElementById('vClient').value : null;
             if(!itemId || qty <= 0) return alert("Datos inválidos");
             const item = state.items.find(i => i.id === itemId);
-            if(item.stock < qty) return alert("Stock insuficiente");
+            if(!item || item.stock < qty) return alert("Stock insuficiente");
             const total = item.price * qty;
             const totalCost = (item.cost || 0) * qty;
             try {
@@ -245,4 +248,4 @@
         window.deleteItem = async (id) => { if(confirm("¿Eliminar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id)); };
         
         window.addClient = async () => {
-            const name = document.getElementById('cn').
+            const name = document.getElementById('c
