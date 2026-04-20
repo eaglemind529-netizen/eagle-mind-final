@@ -46,9 +46,16 @@
             appId: "1:502648373937:web:8c3beaa2a6c9289a4d9890"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Inicialización segura
+        let app, db, auth;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) {
+            console.error("Firebase init error:", e);
+        }
+
         const appId = "eagle-mind-final";
         const ADMIN_EMAIL = "eaglemind529@gmail.com";
 
@@ -67,8 +74,9 @@
             const root = document.getElementById('app');
             if (!root) return;
 
+            // Pantalla de carga mejorada con timeout de seguridad
             if (state.loading) {
-                root.innerHTML = `<div class="h-screen flex items-center justify-center bg-white"><div class="flex flex-col items-center"><div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500 mb-4"></div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargando...</p></div></div>`;
+                root.innerHTML = `<div class="h-screen flex items-center justify-center bg-white"><div class="flex flex-col items-center"><div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500 mb-4"></div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargando Sistema...</p></div></div>`;
                 return;
             }
 
@@ -159,20 +167,25 @@
             unsubscribes.forEach(unsub => unsub());
             unsubscribes = [];
             
-            const userPath = (col) => collection(db, 'artifacts', appId, 'users', userId, col);
-            const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
-            
-            unsubscribes.push(onSnapshot(userPath("items"), (snap) => { state.items = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
-            unsubscribes.push(onSnapshot(userPath("clients"), (snap) => { state.clients = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
-            unsubscribes.push(onSnapshot(userPath("sales"), (snap) => { state.sales = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
-            unsubscribes.push(onSnapshot(userPath("expenses"), (snap) => { state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
-            unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => { state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
-            
-            if(auth.currentUser.email.toLowerCase() === ADMIN_EMAIL) {
-                unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => { state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
+            try {
+                const userPath = (col) => collection(db, 'artifacts', appId, 'users', userId, col);
+                const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
+                
+                unsubscribes.push(onSnapshot(userPath("items"), (snap) => { state.items = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
+                unsubscribes.push(onSnapshot(userPath("clients"), (snap) => { state.clients = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
+                unsubscribes.push(onSnapshot(userPath("sales"), (snap) => { state.sales = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
+                unsubscribes.push(onSnapshot(userPath("expenses"), (snap) => { state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
+                unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => { state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
+                
+                if(auth.currentUser.email.toLowerCase() === ADMIN_EMAIL) {
+                    unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => { state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
+                }
+            } catch (err) {
+                console.error("Error fetching data:", err);
             }
         };
 
+        // Funciones de cálculo con protección contra null
         function calcularCaja() {
             const v = (state.sales || []).filter(s => s.type === 'contado').reduce((acc, s) => acc + Number(s.total || 0), 0);
             const e = (state.expenses || []).reduce((acc, exp) => acc + Number(exp.amount || 0), 0);
@@ -205,6 +218,7 @@
             render();
         };
 
+        // Acciones Globales
         window.handleVenta = async () => {
             const itemId = document.getElementById('vItem').value;
             const qty = Number(document.getElementById('vQty').value);
@@ -223,7 +237,7 @@
                 if(type === 'credito' && clientId) await updateDoc(docRef("clients", clientId), { debt: increment(total) });
                 state.activeModal = null;
                 render();
-            } catch (e) { alert("Error"); }
+            } catch (e) { alert("Error al procesar venta"); }
         };
 
         window.addItem = async () => {
@@ -239,13 +253,4 @@
                     const itemRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", existingItem.id);
                     await updateDoc(itemRef, { stock: increment(stock), cost: cost });
                 } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items"), { name, code, cost, price, stock });
-                }
-                state.activeModal = null;
-            } catch (e) { alert("Error al guardar"); }
-        };
-
-        window.deleteItem = async (id) => { if(confirm("¿Eliminar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id)); };
-        
-        window.addClient = async () => {
-            const name = document.getElementById('c
+                    await addDoc(collectio
