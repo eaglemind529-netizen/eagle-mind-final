@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -22,13 +22,13 @@
         .btn-yellow { background: var(--primary); color: black; font-weight: 800; border-radius: 20px; padding: 18px; width: 100%; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 8px 20px rgba(255, 210, 0, 0.2); }
         .list-item { background: #F8F9FA; border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid #EEF2F6; display: flex; justify-content: space-between; align-items: center; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .animate-slide-up { animation: slideUp(0.4s cubic-bezier(0.16, 1, 0.3, 1)); }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         
-        .carousel-container { display: flex; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 300%; }
-        .carousel-item { width: 33.333%; flex-shrink: 0; }
+        /* Ajuste del Carrusel para 4 items */
+        .carousel-container { display: flex; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 400%; }
+        .carousel-item { width: 25%; flex-shrink: 0; }
         .carousel-wrapper { overflow: hidden; width: 100%; border-radius: 30px; }
         
-        /* Estilos para Notificaciones */
         .notif-badge { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; border: 2px solid #000; }
     </style>
 </head>
@@ -96,7 +96,6 @@
                 render();
             }));
 
-            // Notificaciones Públicas (del Admin)
             unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => {
                 state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
                 render();
@@ -147,36 +146,21 @@
             const cost = Number(document.getElementById('nCost').value);
             const price = Number(document.getElementById('nPrice').value);
             const stock = Number(document.getElementById('nStock').value);
-            
             if(!name || price <= 0) return alert("Nombre y precio obligatorios");
-
             try {
                 const existingItem = code ? state.items.find(i => i.code === code) : null;
                 if (existingItem) {
                     const itemRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", existingItem.id);
-                    await updateDoc(itemRef, {
-                        stock: increment(stock),
-                        cost: cost 
-                    });
+                    await updateDoc(itemRef, { stock: increment(stock), cost: cost });
                 } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items"), { 
-                        name, 
-                        code, 
-                        cost, 
-                        price, 
-                        stock 
-                    });
+                    await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items"), { name, code, cost, price, stock });
                 }
                 state.activeModal = null;
-            } catch (e) {
-                alert("Error al guardar el producto");
-            }
+            } catch (e) { alert("Error al guardar el producto"); }
         };
 
         window.deleteItem = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id));
-            } catch (e) { alert("Error al eliminar producto"); }
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id)); } catch (e) { alert("Error al eliminar producto"); }
         };
 
         window.addClient = async () => {
@@ -209,9 +193,7 @@
         };
 
         window.deleteClient = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", id));
-            } catch (e) { alert("Error al eliminar"); }
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", id)); } catch (e) { alert("Error al eliminar"); }
         };
 
         window.addExpense = async () => {
@@ -225,42 +207,22 @@
         window.handleAbono = async (clientIdFromBtn) => {
             const targetId = clientIdFromBtn || state.payingClientId;
             const amountInput = document.getElementById(clientIdFromBtn ? `input-abono-${clientIdFromBtn}` : 'aAmt');
-            
             if(!amountInput) return;
             const amount = parseFloat(amountInput.value);
-            
             if(!amount || amount <= 0 || isNaN(amount)) return alert("Ingrese un monto válido");
             if(!targetId) return alert("Error de sesión de cobro");
-
             const client = state.clients.find(c => c.id === targetId);
             if(!client) return alert("Cliente no encontrado");
             if(amount > (client.debt + 0.01)) return alert("El abono no puede superar la deuda");
-
             try {
                 const userPath = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
                 const docPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-
-                await updateDoc(docPath("clients", targetId), { 
-                    debt: increment(-amount) 
-                });
-
-                await addDoc(userPath("sales"), {
-                    itemId: "ABONO",
-                    itemName: `Abono: ${client.name}`,
-                    qty: 1,
-                    total: amount,
-                    cost: 0, 
-                    type: 'contado',
-                    date: new Date().toISOString()
-                });
-
+                await updateDoc(docPath("clients", targetId), { debt: increment(-amount) });
+                await addDoc(userPath("sales"), { itemId: "ABONO", itemName: `Abono: ${client.name}`, qty: 1, total: amount, cost: 0, type: 'contado', date: new Date().toISOString() });
                 state.payingClientId = null;
                 state.activeModal = null;
                 render();
-            } catch (e) {
-                console.error(e);
-                alert("Error al procesar abono");
-            }
+            } catch (e) { alert("Error al procesar abono"); }
         };
 
         window.editVenta = (id) => {
@@ -273,52 +235,37 @@
             const newQty = Number(document.getElementById('editVQty').value);
             const newTotal = Number(document.getElementById('editVTotal').value);
             const newUnitCost = Number(document.getElementById('editVCost').value);
-            
             if(!newQty || newQty < 0) return alert("Cantidad inválida");
-
             try {
                 const userDocPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-                
                 if(newQty !== sale.qty && sale.itemId !== "ABONO") {
                     const diff = sale.qty - newQty; 
                     await updateDoc(userDocPath("items", sale.itemId), { stock: increment(diff) });
                 }
-
                 if(sale.type === 'credito' && sale.clientId && newTotal !== sale.total) {
                     const diffDeuda = newTotal - sale.total;
                     await updateDoc(userDocPath("clients", sale.clientId), { debt: increment(diffDeuda) });
                 }
-
-                const updatedData = { 
-                    qty: newQty, 
-                    total: newTotal,
-                    cost: newUnitCost * newQty 
-                };
-
+                const updatedData = { qty: newQty, total: newTotal, cost: newUnitCost * newQty };
                 await updateDoc(userDocPath("sales", saleId), updatedData);
                 state.editingSaleId = null;
                 render();
-            } catch (e) {
-                alert("Error al actualizar venta");
-            }
+            } catch (e) { alert("Error al actualizar venta"); }
         };
 
         window.sincronizarCostos = async () => {
             if (state.isSyncing) return;
             state.isSyncing = true;
             render();
-
             try {
                 const batch = writeBatch(db);
                 let count = 0;
-
                 for (const sale of state.sales) {
                     if (sale.itemId && sale.itemId !== "ABONO") {
                         const currentItem = state.items.find(i => i.id === sale.itemId);
                         if (currentItem && (currentItem.cost || currentItem.cost === 0)) {
                             const saleCost = sale.cost || 0;
                             const targetCost = Number(currentItem.cost) * Number(sale.qty);
-                            
                             if (saleCost === 0 && targetCost > 0) {
                                 const saleRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "sales", sale.id);
                                 batch.update(saleRef, { cost: targetCost });
@@ -327,24 +274,14 @@
                         }
                     }
                 }
-
-                if (count > 0) {
-                    await batch.commit();
-                    console.log(`Sincronización completa: ${count} ventas actualizadas.`);
-                }
-            } catch (e) {
-                console.error("Error en sincronización:", e);
-            } finally {
-                state.isSyncing = false;
-                render();
-            }
+                if (count > 0) await batch.commit();
+            } catch (e) { console.error(e); } finally { state.isSyncing = false; render(); }
         };
 
         window.sendNotification = async () => {
             const title = document.getElementById('notifTitle').value.trim();
             const msg = document.getElementById('notifMsg').value.trim();
             if(!title || !msg) return alert("Complete los campos");
-
             try {
                 const publicPath = collection(db, 'artifacts', appId, 'public', 'data', 'notifications');
                 await addDoc(publicPath, { title, message: msg, date: new Date().toISOString() });
@@ -355,9 +292,7 @@
         };
 
         window.deleteNotification = async (id) => {
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id));
-            } catch (e) { alert("Error al eliminar"); }
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id)); } catch (e) { alert("Error al eliminar"); }
         };
 
         window.toggleUserStatus = async (uid, currentStatus) => {
@@ -407,12 +342,18 @@
             return gananciaNeta.toLocaleString('en-US', { minimumFractionDigits: 2 });
         }
 
+        // Nueva función para Ventas Totales
+        function calcularVentasTotales() {
+            const total = state.sales.reduce((acc, s) => acc + Number(s.total), 0);
+            return total.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+
         let touchStartX = 0;
         window.handleTouchStart = (e) => { touchStartX = e.changedTouches[0].screenX; };
         window.handleTouchEnd = (e) => {
             let touchEndX = e.changedTouches[0].screenX;
             if (touchStartX - touchEndX > 50) {
-                if (state.carouselIndex < 2) state.carouselIndex++;
+                if (state.carouselIndex < 3) state.carouselIndex++;
             }
             if (touchEndX - touchStartX > 50) {
                 if (state.carouselIndex > 0) state.carouselIndex--;
@@ -420,183 +361,4 @@
             render();
         };
 
-        function render() {
-            const root = document.getElementById('app');
-            if (state.loading) {
-                root.innerHTML = `<div class="h-screen flex items-center justify-center bg-white"><div class="flex flex-col items-center"><div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500 mb-4"></div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargando...</p></div></div>`;
-                return;
-            }
-            if (!state.user) { renderLogin(root); return; }
-            const isAdm = state.user.email.toLowerCase() === ADMIN_EMAIL;
-            if (state.userData && !state.userData.approved && !isAdm) {
-                root.innerHTML = `<div class="h-screen flex flex-col items-center justify-center px-10 text-center bg-white"><div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mb-8"><i class="fas fa-lock text-amber-500 text-4xl"></i></div><h2 class="text-3xl font-black mb-4 uppercase tracking-tighter">Acceso Pendiente</h2><p class="text-slate-400 text-base leading-relaxed">Tu cuenta <b>${state.user.email}</b> espera aprobación.</p><button onclick="window.logout()" class="btn-yellow mt-10">Cerrar Sesión</button></div>`;
-                return;
-            }
-            const caja = calcularCaja();
-            const deudas = calcularDeudas();
-            const gastos = calcularGastos();
-            const ganancias = calcularGanancias();
-
-            root.innerHTML = `
-            <div class="pb-36">
-                <header class="header-gradient pt-16 pb-12 px-8 flex justify-between items-end relative">
-                    <div><h2 class="text-black font-black text-3xl uppercase tracking-tighter">EXITO</h2><p class="text-black/50 text-[11px] font-bold tracking-widest uppercase mt-2">Gestión Privada</p></div>
-                    <div class="flex gap-3">
-                        <button onclick="window.setModal('avisos')" class="w-14 h-14 bg-black/10 rounded-2xl flex items-center justify-center relative">
-                            <i class="fas fa-bell text-black text-lg"></i>
-                            ${state.notifications.length > 0 ? '<div class="notif-badge"></div>' : ''}
-                        </button>
-                        <button onclick="window.logout()" class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg"><i class="fas fa-power-off text-white text-lg"></i></button>
-                    </div>
-                </header>
-                <div class="px-6 -mt-10 flex flex-col gap-4">
-                    <div class="bg-black rounded-[35px] p-8 shadow-2xl flex justify-between items-center text-white relative overflow-hidden">
-                        <div class="relative z-10"><p class="text-white/40 text-[11px] font-bold uppercase tracking-widest">En Caja (Efectivo)</p><h3 class="text-white text-3xl font-black mt-2 tracking-tighter">$ ${caja}</h3></div>
-                        <div class="w-16 h-16 bg-[#FFD200] rounded-3xl flex items-center justify-center shadow-2xl relative z-10"><i class="fas fa-wallet text-black text-2xl"></i></div>
-                    </div>
-                    
-                    <div class="carousel-wrapper" ontouchstart="window.handleTouchStart(event)" ontouchend="window.handleTouchEnd(event)">
-                        <div class="carousel-container" style="transform: translateX(-${state.carouselIndex * 33.333}%);">
-                            <div class="carousel-item">
-                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mr-2">
-                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Dinero en la Calle</p><h3 class="text-rose-600 text-2xl font-black mt-1">$ ${deudas}</h3></div>
-                                    <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500"><i class="fas fa-hand-holding-dollar text-xl"></i></div>
-                                </div>
-                            </div>
-                            <div class="carousel-item">
-                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mx-1">
-                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Gastos Totales</p><h3 class="text-orange-600 text-2xl font-black mt-1">$ ${gastos}</h3></div>
-                                    <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500"><i class="fas fa-receipt text-xl"></i></div>
-                                </div>
-                            </div>
-                            <div class="carousel-item">
-                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center ml-2">
-                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Ganancia Real</p><h3 class="text-emerald-600 text-2xl font-black mt-1">$ ${ganancias}</h3></div>
-                                    <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500"><i class="fas fa-chart-line text-xl"></i></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <main class="p-6 grid grid-cols-3 gap-5 mt-4">
-                    <div onclick="window.setModal('venta')" class="app-card"><i class="fas fa-cart-plus text-blue-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Venta</p></div>
-                    <div onclick="window.setModal('inventario')" class="app-card"><i class="fas fa-box-open text-emerald-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Stock</p></div>
-                    <div onclick="window.setModal('clientes')" class="app-card"><i class="fas fa-user-tag text-rose-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Clientes</p></div>
-                    <div onclick="window.setModal('egresos')" class="app-card"><i class="fas fa-receipt text-orange-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Gastos</p></div>
-                    <div onclick="window.setModal('historial')" class="app-card"><i class="fas fa-list-ul text-purple-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Historial</p></div>
-                    <div onclick="window.setModal('deudas')" class="app-card"><i class="fas fa-money-bill-transfer text-amber-600 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Cobros</p></div>
-                    ${isAdm ? `<div onclick="window.setModal('admin')" class="app-card bg-slate-900 border-none text-white col-span-3 aspect-auto py-5 flex-row gap-4"><i class="fas fa-user-shield text-[#FFD200] text-xl"></i><p class="text-[11px] font-black tracking-widest uppercase">Panel de Control</p></div>` : ''}
-                </main>
-                <nav class="nav-bar">
-                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-[#FFD200]"><i class="fas fa-home text-xl"></i></div>
-                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-chart-pie text-xl"></i></div>
-                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-cog text-xl"></i></div>
-                </nav>
-            </div>
-            ${state.activeModal ? renderModal() : ''}`;
-        }
-
-        function renderModal() {
-            const m = state.activeModal;
-            const isAdm = state.user.email.toLowerCase() === ADMIN_EMAIL;
-            let html = '';
-            
-            if(m === 'venta') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Nueva Venta</h2><select id="vItem" class="input-group">${state.items.map(i => `<option value="${i.id}">${i.name} ($${i.price})</option>`)}</select><input id="vQty" type="number" class="input-group" value="1"><select id="vType" class="input-group" onchange="document.getElementById('divClient').style.display = this.value === 'credito' ? 'block' : 'none'"><option value="contado">💵 Efectivo</option><option value="credito">⏳ Crédito</option></select><div id="divClient" style="display:none"><select id="vClient" class="input-group">${state.clients.map(c => `<option value="${c.id}">${c.name}</option>`)}</select></div><button onclick="window.handleVenta()" class="btn-yellow mt-4">Confirmar</button>`;
-            } else if(m === 'inventario') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Stock</h2><div class="space-y-3 mb-8 max-h-40 overflow-y-auto">${state.items.map(i => `
-                    <div class="list-item">
-                        <div><p class="font-bold">${i.name} <span class="text-[10px] text-slate-400 font-normal ml-2">#${i.code || 'S/C'}</span></p><p class="text-emerald-600 font-black">${i.stock} ud - $${i.price} <span class="text-slate-400 font-normal text-[10px] ml-2">(Costo: $${i.cost || 0})</span></p></div>
-                        <button onclick="window.deleteItem('${i.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can text-sm"></i></button>
-                    </div>`).join('')}</div><input id="nItem" type="text" placeholder="Producto" class="input-group"><input id="nCode" type="text" placeholder="Código de Producto" class="input-group"><input id="nCost" type="number" placeholder="Costo Unitario" class="input-group"><input id="nPrice" type="number" placeholder="Precio de Venta" class="input-group"><input id="nStock" type="number" placeholder="Stock Inicial" class="input-group"><button onclick="window.addItem()" class="btn-yellow">Añadir</button>`;
-            } else if(m === 'admin') {
-                html = `
-                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter text-slate-900">Administración</h2>
-                <div class="bg-slate-50 p-6 rounded-[30px] mb-8">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Enviar Notificación Global</p>
-                    <input id="notifTitle" type="text" placeholder="Título del aviso" class="input-group" style="background:white">
-                    <textarea id="notifMsg" placeholder="Mensaje para los usuarios" class="input-group h-24" style="background:white"></textarea>
-                    <button onclick="window.sendNotification()" class="btn-yellow">Publicar Aviso</button>
-                </div>
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Usuarios Registrados</h3>
-                <div class="space-y-3 max-h-48 overflow-y-auto">${state.allUsers.map(u => `<div class="list-item"><div><p class="text-xs font-black">${u.email}</p><p class="text-[9px] font-bold ${u.approved ? 'text-emerald-500' : 'text-amber-500'} uppercase">${u.approved ? 'Autorizado' : 'Pendiente'}</p></div><button onclick="window.toggleUserStatus('${u.id}', ${u.approved})" class="px-4 py-2 ${u.approved ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'} rounded-xl text-[10px] font-black uppercase">${u.approved ? 'Bloquear' : 'Aprobar'}</button></div>`).join('')}</div>`;
-            } else if(m === 'clientes') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Clientes</h2><div class="space-y-3 mb-6 max-h-60 overflow-y-auto">${state.clients.map(c => `
-                    <div class="list-item">
-                        <div class="flex-grow"><p class="font-bold">${c.name} <span class="text-[10px] text-slate-400 font-normal ml-2">#${c.code || 'S/C'}</span></p><p class="text-rose-600 text-[11px] font-black uppercase">Deuda: $${(c.debt || 0).toFixed(2)}</p></div>
-                        <div class="flex gap-2">
-                            <button onclick="window.editClient('${c.id}')" class="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-edit text-sm"></i></button>
-                            <button onclick="window.deleteClient('${c.id}')" class="w-9 h-9 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can text-sm"></i></button>
-                        </div>
-                    </div>`).join('')}</div><div class="border-t border-slate-100 pt-6"><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Registro / Edición</p><input id="cn" type="text" placeholder="Nombre Completo" class="input-group"><input id="cc" type="text" placeholder="Código de Cliente" class="input-group"><input id="cp" type="tel" placeholder="Número de Teléfono" class="input-group"><button id="btnClientAction" onclick="window.addClient()" class="btn-yellow">Guardar Cliente</button>${state.editingClientId ? `<button onclick="state.editingClientId=null; render();" class="w-full mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cancelar Edición</button>` : ''}</div>`;
-            } else if(m === 'egresos') {
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Gasto</h2><input id="eDesc" type="text" placeholder="Concepto" class="input-group"><input id="eAmt" type="number" placeholder="Monto" class="input-group"><button onclick="window.addExpense()" class="btn-yellow">Guardar</button>`;
-            } else if(m === 'historial') {
-                if(state.editingSaleId) {
-                    const s = state.sales.find(sale => sale.id === state.editingSaleId);
-                    const unitCost = s.qty > 0 ? (s.cost / s.qty) : (s.cost || 0);
-                    html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Editar Venta</h2><p class="text-xs font-bold text-slate-400 mb-4">${s.itemName}</p><div class="space-y-4"><label class="text-[10px] font-black uppercase">Cantidad</label><input id="editVQty" type="number" class="input-group" value="${s.qty}"><label class="text-[10px] font-black uppercase">Costo Unitario ($)</label><input id="editVCost" type="number" class="input-group" value="${unitCost}"><label class="text-[10px] font-black uppercase">Total Venta ($)</label><input id="editVTotal" type="number" class="input-group" value="${s.total}"><button onclick="window.saveEditedVenta('${s.id}')" class="btn-yellow">Actualizar</button><button onclick="state.editingSaleId=null; render();" class="w-full mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cancelar</button></div>`;
-                } else {
-                    html = `<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-black uppercase tracking-tighter">Ventas</h2><button onclick="window.sincronizarCostos()" class="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase flex items-center gap-2"><i class="fas fa-sync-alt ${state.isSyncing ? 'animate-spin' : ''}"></i>${state.isSyncing ? 'Sincronizando' : 'Sincronizar'}</button></div><div class="space-y-3 max-h-80 overflow-y-auto">${state.sales.map(s => `<div class="list-item"><div><p class="text-sm font-bold">${s.itemName}</p><p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(s.date).toLocaleDateString()} - ${s.type === 'credito' ? '⏳ Crédito' : '💵 Efectivo'}</p></div><div class="flex items-center gap-3"><span class="text-emerald-600 font-black">$${s.total.toFixed(2)}</span><button onclick="window.editVenta('${s.id}')" class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-pen text-[10px]"></i></button></div></div>`).join('')}</div>`;
-                }
-            } else if(m === 'avisos') {
-                html = `
-                <h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Notificaciones</h2>
-                <div class="space-y-4 max-h-96 overflow-y-auto">
-                    ${state.notifications.map(n => `
-                        <div class="bg-slate-50 border border-slate-100 p-5 rounded-[28px] relative">
-                            <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">${new Date(n.date).toLocaleDateString()}</p>
-                            <h4 class="text-base font-black mb-1 uppercase tracking-tighter">${n.title}</h4>
-                            <p class="text-sm text-slate-500 leading-relaxed">${n.message}</p>
-                            ${isAdm ? `<button onclick="window.deleteNotification('${n.id}')" class="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-colors"><i class="fas fa-times-circle"></i></button>` : ''}
-                        </div>
-                    `).join('')}
-                    ${state.notifications.length === 0 ? '<p class="text-center text-slate-300 font-bold py-10 uppercase text-xs tracking-widest">Sin avisos nuevos</p>' : ''}
-                </div>`;
-            } else if(m === 'deudas') {
-                const payingClient = state.clients.find(c => c.id === state.payingClientId);
-                html = `<h2 class="text-2xl font-black mb-6 uppercase tracking-tighter">Cobros</h2>${state.payingClientId ? `<div class="bg-amber-50 rounded-3xl p-6 mb-6"><p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Abonar a:</p><p class="text-xl font-black mb-1">${payingClient.name}</p><p class="text-rose-600 font-bold text-sm mb-4">Deuda Actual: $${payingClient.debt.toFixed(2)}</p><input id="aAmt" type="number" placeholder="Monto a abonar" class="input-group" style="background:white"><button onclick="window.handleAbono()" class="btn-yellow">Confirmar Abono</button><button onclick="state.payingClientId=null; render();" class="w-full mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Regresar a la lista</button></div>` : `<div class="space-y-3 max-h-80 overflow-y-auto">${state.clients.filter(c => c.debt > 0).map(c => `<div class="list-item flex-col items-stretch gap-3"><div class="flex justify-between items-center"><div class="flex-grow"><p class="font-bold">${c.name}</p><p class="text-rose-600 font-black">$${c.debt.toFixed(2)}</p></div><button onclick="window.deleteClient('${c.id}')" class="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center active:scale-90 transition-all"><i class="fas fa-trash-can"></i></button></div><div class="flex gap-2"><input id="input-abono-${c.id}" type="number" placeholder="Monto" class="flex-grow bg-white border border-slate-200 rounded-xl px-3 text-xs font-bold outline-none focus:border-amber-400"><div onclick="window.handleAbono('${c.id}')" class="px-4 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center active:scale-95 transition-all cursor-pointer text-[10px] font-black tracking-widest">ABONO</div></div></div>`).join('')}${state.clients.filter(c => c.debt > 0).length === 0 ? '<p class="text-center text-slate-300 font-bold py-10 uppercase text-xs tracking-widest">No hay deudas pendientes</p>' : ''}</div>`}`;
-            }
-            return `<div class="modal" onclick="if(event.target === this) window.setModal(null)"><div class="modal-content animate-slide-up"><div class="w-16 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" onclick="window.setModal(null)"></div>${html}<button onclick="window.setModal(null)" class="w-full mt-8 text-slate-300 font-black uppercase text-[11px] tracking-widest">Cerrar</button></div></div>`;
-        }
-
-        function renderLogin(root) {
-            root.innerHTML = `<div class="h-screen flex flex-col justify-center px-10 bg-white"><div class="w-24 h-24 header-gradient rounded-[32px] mx-auto mb-8 flex items-center justify-center shadow-2xl rotate-3"><i class="fas fa-eagle text-black text-4xl"></i></div><h1 class="text-4xl font-black text-center mb-2 tracking-tighter italic">Eagle Mind</h1><p class="text-center text-slate-400 text-[11px] font-bold uppercase tracking-[0.3em] mb-12">Private Edition Pro</p><input id="email" type="email" placeholder="Correo electrónico" class="input-group"><input id="pass" type="password" placeholder="Contraseña" class="input-group"><button id="btnLogin" onclick="window.handleLogin()" class="btn-yellow mt-6">Acceder</button><div class="relative flex py-10 items-center"><div class="flex-grow border-t border-slate-100"></div><span class="mx-4 text-slate-300 text-[10px] font-bold uppercase">Registro</span><div class="flex-grow border-t border-slate-100"></div></div><button id="btnReg" onclick="window.handleRegister()" class="w-full py-5 border-2 border-slate-100 rounded-[22px] text-slate-400 font-black text-[11px] uppercase active:bg-slate-50">Solicitar Acceso</button></div>`;
-        }
-
-        window.handleLogin = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('pass').value;
-            if(!email || !pass) return;
-            document.getElementById('btnLogin').innerText = "ENTRANDO...";
-            try { await signInWithEmailAndPassword(auth, email, pass); } catch(err) { alert("Error de acceso"); document.getElementById('btnLogin').innerText = "ACCEDER"; }
-        };
-
-        window.handleRegister = async () => {
-            const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('pass').value;
-            if(!email || pass.length < 6) return alert("Datos insuficientes");
-            document.getElementById('btnReg').innerText = "REGISTRANDO...";
-            try { 
-                const res = await createUserWithEmailAndPassword(auth, email, pass);
-                const isAdm = email.toLowerCase() === ADMIN_EMAIL;
-                await setDoc(doc(db, 'artifacts', appId, 'users', res.user.uid), { email, approved: isAdm });
-                alert(isAdm ? "Admin Creado" : "Solicitud enviada");
-            } catch(err) { alert("Error"); document.getElementById('btnReg').innerText = "SOLICITAR ACCESO"; }
-        };
-
-        onAuthStateChanged(auth, async (u) => { 
-            state.user = u; 
-            if(u) {
-                const userDoc = await getDoc(doc(db, 'artifacts', appId, 'users', u.uid));
-                state.userData = userDoc.exists() ? userDoc.data() : null;
-                fetchData(u.uid);
-            }
-            state.loading = false; 
-            render(); 
-        });
-    </script>
-</body>
-</html>
-
-```
+        function rend
