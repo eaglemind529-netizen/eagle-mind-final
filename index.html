@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,12 +23,9 @@
         .list-item { background: #F8F9FA; border-radius: 20px; padding: 16px; margin-bottom: 12px; border: 1px solid #EEF2F6; display: flex; justify-content: space-between; align-items: center; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        
-        /* Ajuste del Carrusel para 4 items */
         .carousel-container { display: flex; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); width: 400%; }
         .carousel-item { width: 25%; flex-shrink: 0; }
         .carousel-wrapper { overflow: hidden; width: 100%; border-radius: 30px; }
-        
         .notif-badge { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; border: 2px solid #000; }
     </style>
 </head>
@@ -59,54 +56,150 @@
             user: null, userData: null, loading: true,
             items: [], sales: [], clients: [], expenses: [],
             allUsers: [], notifications: [],
-            activeModal: null,
-            carouselIndex: 0,
-            editingClientId: null,
-            payingClientId: null,
-            editingSaleId: null,
-            isSyncing: false
+            activeModal: null, carouselIndex: 0,
+            editingClientId: null, payingClientId: null,
+            editingSaleId: null, isSyncing: false
         };
 
         let unsubscribes = [];
 
+        function render() {
+            const root = document.getElementById('app');
+            if (!root) return;
+
+            if (state.loading) {
+                root.innerHTML = `<div class="h-screen flex items-center justify-center bg-white"><div class="flex flex-col items-center"><div class="animate-spin rounded-full h-12 w-12 border-t-4 border-yellow-500 mb-4"></div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargando...</p></div></div>`;
+                return;
+            }
+
+            if (!state.user) { 
+                renderLogin(root); 
+                return; 
+            }
+
+            const isAdm = state.user.email.toLowerCase() === ADMIN_EMAIL;
+            
+            if (state.userData && !state.userData.approved && !isAdm) {
+                root.innerHTML = `<div class="h-screen flex flex-col items-center justify-center px-10 text-center bg-white"><div class="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center mb-8"><i class="fas fa-lock text-amber-500 text-4xl"></i></div><h2 class="text-3xl font-black mb-4 uppercase tracking-tighter">Acceso Pendiente</h2><p class="text-slate-400 text-base leading-relaxed">Tu cuenta <b>${state.user.email}</b> espera aprobación.</p><button onclick="window.logout()" class="btn-yellow mt-10">Cerrar Sesión</button></div>`;
+                return;
+            }
+
+            const caja = calcularCaja();
+            const deudas = calcularDeudas();
+            const gastos = calcularGastos();
+            const ganancias = calcularGanancias();
+            const vTotales = calcularVentasTotales();
+
+            root.innerHTML = `
+            <div class="pb-36">
+                <header class="header-gradient pt-16 pb-12 px-8 flex justify-between items-end relative">
+                    <div><h2 class="text-black font-black text-3xl uppercase tracking-tighter">EXITO</h2><p class="text-black/50 text-[11px] font-bold tracking-widest uppercase mt-2">Gestión Privada</p></div>
+                    <div class="flex gap-3">
+                        <button onclick="window.setModal('avisos')" class="w-14 h-14 bg-black/10 rounded-2xl flex items-center justify-center relative">
+                            <i class="fas fa-bell text-black text-lg"></i>
+                            ${state.notifications.length > 0 ? '<div class="notif-badge"></div>' : ''}
+                        </button>
+                        <button onclick="window.logout()" class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg"><i class="fas fa-power-off text-white text-lg"></i></button>
+                    </div>
+                </header>
+                <div class="px-6 -mt-10 flex flex-col gap-4">
+                    <div class="bg-black rounded-[35px] p-8 shadow-2xl flex justify-between items-center text-white relative overflow-hidden">
+                        <div class="relative z-10"><p class="text-white/40 text-[11px] font-bold uppercase tracking-widest">En Caja (Efectivo)</p><h3 class="text-white text-3xl font-black mt-2 tracking-tighter">$ ${caja}</h3></div>
+                        <div class="w-16 h-16 bg-[#FFD200] rounded-3xl flex items-center justify-center shadow-2xl relative z-10"><i class="fas fa-wallet text-black text-2xl"></i></div>
+                    </div>
+                    
+                    <div class="carousel-wrapper" ontouchstart="window.handleTouchStart(event)" ontouchend="window.handleTouchEnd(event)">
+                        <div class="carousel-container" style="transform: translateX(-${state.carouselIndex * 25}%);">
+                            <div class="carousel-item">
+                                <div onclick="window.setModal('desglose_ventas')" class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mr-2 cursor-pointer active:scale-95 transition-all">
+                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Ventas Totales</p><h3 class="text-blue-600 text-2xl font-black mt-1">$ ${vTotales}</h3></div>
+                                    <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500"><i class="fas fa-chart-bar text-xl"></i></div>
+                                </div>
+                            </div>
+                            <div class="carousel-item">
+                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mx-1">
+                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Dinero en la Calle</p><h3 class="text-rose-600 text-2xl font-black mt-1">$ ${deudas}</h3></div>
+                                    <div class="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500"><i class="fas fa-hand-holding-dollar text-xl"></i></div>
+                                </div>
+                            </div>
+                            <div class="carousel-item">
+                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center mx-1">
+                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Gastos Totales</p><h3 class="text-orange-600 text-2xl font-black mt-1">$ ${gastos}</h3></div>
+                                    <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500"><i class="fas fa-receipt text-xl"></i></div>
+                                </div>
+                            </div>
+                            <div class="carousel-item">
+                                <div class="bg-white rounded-[30px] p-6 shadow-lg border border-slate-100 flex justify-between items-center ml-2">
+                                    <div><p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Ganancia Real</p><h3 class="text-emerald-600 text-2xl font-black mt-1">$ ${ganancias}</h3></div>
+                                    <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500"><i class="fas fa-chart-line text-xl"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <main class="p-6 grid grid-cols-3 gap-5 mt-4">
+                    <div onclick="window.setModal('venta')" class="app-card"><i class="fas fa-cart-plus text-blue-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Venta</p></div>
+                    <div onclick="window.setModal('inventario')" class="app-card"><i class="fas fa-box-open text-emerald-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Stock</p></div>
+                    <div onclick="window.setModal('clientes')" class="app-card"><i class="fas fa-user-tag text-rose-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Clientes</p></div>
+                    <div onclick="window.setModal('egresos')" class="app-card"><i class="fas fa-receipt text-orange-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Gastos</p></div>
+                    <div onclick="window.setModal('historial')" class="app-card"><i class="fas fa-list-ul text-purple-500 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Historial</p></div>
+                    <div onclick="window.setModal('deudas')" class="app-card"><i class="fas fa-money-bill-transfer text-amber-600 text-2xl mb-3"></i><p class="text-[10px] font-extrabold uppercase">Cobros</p></div>
+                    ${isAdm ? `<div onclick="window.setModal('admin')" class="app-card bg-slate-900 border-none text-white col-span-3 aspect-auto py-5 flex-row gap-4"><i class="fas fa-user-shield text-[#FFD200] text-xl"></i><p class="text-[11px] font-black tracking-widest uppercase">Panel de Control</p></div>` : ''}
+                </main>
+                <nav class="nav-bar">
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-[#FFD200]"><i class="fas fa-home text-xl"></i></div>
+                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-chart-pie text-xl"></i></div>
+                    <div class="w-10 h-10 flex items-center justify-center text-white/40"><i class="fas fa-cog text-xl"></i></div>
+                </nav>
+            </div>
+            ${state.activeModal ? renderModal() : ''}`;
+        }
+
         const fetchData = (userId) => {
             unsubscribes.forEach(unsub => unsub());
             unsubscribes = [];
-
             const userPath = (col) => collection(db, 'artifacts', appId, 'users', userId, col);
             const publicPath = (col) => collection(db, 'artifacts', appId, 'public', 'data', col);
-            
-            unsubscribes.push(onSnapshot(userPath("items"), (snap) => {
-                state.items = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(userPath("clients"), (snap) => {
-                state.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(userPath("sales"), (snap) => {
-                state.sales = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(userPath("expenses"), (snap) => {
-                state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
-                render();
-            }));
-
-            unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => {
-                state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date));
-                render();
-            }));
-            
+            unsubscribes.push(onSnapshot(userPath("items"), (snap) => { state.items = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
+            unsubscribes.push(onSnapshot(userPath("clients"), (snap) => { state.clients = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
+            unsubscribes.push(onSnapshot(userPath("sales"), (snap) => { state.sales = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
+            unsubscribes.push(onSnapshot(userPath("expenses"), (snap) => { state.expenses = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
+            unsubscribes.push(onSnapshot(publicPath("notifications"), (snap) => { state.notifications = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b) => new Date(b.date) - new Date(a.date)); render(); }));
             if(auth.currentUser.email.toLowerCase() === ADMIN_EMAIL) {
-                unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => {
-                    state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                    render();
-                }));
+                unsubscribes.push(onSnapshot(collection(db, 'artifacts', appId, 'users'), (snap) => { state.allUsers = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }));
             }
+        };
+
+        function calcularCaja() {
+            const v = (state.sales || []).filter(s => s.type === 'contado').reduce((acc, s) => acc + Number(s.total || 0), 0);
+            const e = (state.expenses || []).reduce((acc, exp) => acc + Number(exp.amount || 0), 0);
+            return (v - e).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+        function calcularDeudas() {
+            return (state.clients || []).reduce((acc, client) => acc + Number(client.debt || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+        function calcularGastos() {
+            return (state.expenses || []).reduce((acc, exp) => acc + Number(exp.amount || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+        function calcularGanancias() {
+            const cobrosEfectivos = (state.sales || []).filter(s => s.type === 'contado');
+            const ingresos = cobrosEfectivos.reduce((acc, s) => acc + Number(s.total || 0), 0);
+            const costos = cobrosEfectivos.filter(s => s.itemId !== "ABONO").reduce((acc, s) => acc + Number(s.cost || 0), 0);
+            const gastos = (state.expenses || []).reduce((acc, exp) => acc + Number(exp.amount || 0), 0);
+            return (ingresos - costos - gastos).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+        function calcularVentasTotales() {
+            return (state.sales || []).reduce((acc, s) => acc + Number(s.total || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+        }
+
+        window.setModal = (m) => { state.activeModal = m; render(); };
+        window.logout = () => { signOut(auth).then(() => { location.reload(); }); };
+        window.handleTouchStart = (e) => { window.touchStartX = e.changedTouches[0].screenX; };
+        window.handleTouchEnd = (e) => {
+            let touchEndX = e.changedTouches[0].screenX;
+            if (window.touchStartX - touchEndX > 50) { if (state.carouselIndex < 3) state.carouselIndex++; }
+            if (touchEndX - window.touchStartX > 50) { if (state.carouselIndex > 0) state.carouselIndex--; }
+            render();
         };
 
         window.handleVenta = async () => {
@@ -119,20 +212,10 @@
             if(item.stock < qty) return alert("Stock insuficiente");
             const total = item.price * qty;
             const totalCost = (item.cost || 0) * qty;
-
             try {
                 const userRef = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
                 const docRef = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-                await addDoc(userRef("sales"), { 
-                    itemId, 
-                    itemName: item.name, 
-                    qty, 
-                    total, 
-                    cost: totalCost, 
-                    type, 
-                    clientId, 
-                    date: new Date().toISOString() 
-                });
+                await addDoc(userRef("sales"), { itemId, itemName: item.name, qty, total, cost: totalCost, type, clientId, date: new Date().toISOString() });
                 await updateDoc(docRef("items", itemId), { stock: increment(-qty) });
                 if(type === 'credito' && clientId) await updateDoc(docRef("clients", clientId), { debt: increment(total) });
                 state.activeModal = null;
@@ -156,209 +239,10 @@
                     await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items"), { name, code, cost, price, stock });
                 }
                 state.activeModal = null;
-            } catch (e) { alert("Error al guardar el producto"); }
+            } catch (e) { alert("Error al guardar"); }
         };
 
-        window.deleteItem = async (id) => {
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id)); } catch (e) { alert("Error al eliminar producto"); }
-        };
-
+        window.deleteItem = async (id) => { if(confirm("¿Eliminar producto?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "items", id)); };
+        
         window.addClient = async () => {
-            const name = document.getElementById('cn').value.trim();
-            const code = document.getElementById('cc').value.trim();
-            const phone = document.getElementById('cp').value.trim();
-            if(!name || !code) return alert("Nombre y Código son obligatorios");
-            const clientData = { name, code, phone };
-            try {
-                if(state.editingClientId) {
-                    await updateDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", state.editingClientId), clientData);
-                    state.editingClientId = null;
-                } else {
-                    await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients"), { ...clientData, debt: 0 });
-                }
-                state.activeModal = null;
-                render();
-            } catch (e) { alert("Error al procesar cliente"); }
-        };
-
-        window.editClient = (id) => {
-            const client = state.clients.find(c => c.id === id);
-            if(client) {
-                state.editingClientId = id;
-                document.getElementById('cn').value = client.name;
-                document.getElementById('cc').value = client.code;
-                document.getElementById('cp').value = client.phone || '';
-                document.getElementById('btnClientAction').innerText = "Actualizar Cliente";
-            }
-        };
-
-        window.deleteClient = async (id) => {
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "clients", id)); } catch (e) { alert("Error al eliminar"); }
-        };
-
-        window.addExpense = async () => {
-            const desc = document.getElementById('eDesc').value.trim();
-            const amount = Number(document.getElementById('eAmt').value);
-            if(!desc || amount <= 0) return;
-            await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, "expenses"), { desc, amount, date: new Date().toISOString() });
-            state.activeModal = null;
-        };
-
-        window.handleAbono = async (clientIdFromBtn) => {
-            const targetId = clientIdFromBtn || state.payingClientId;
-            const amountInput = document.getElementById(clientIdFromBtn ? `input-abono-${clientIdFromBtn}` : 'aAmt');
-            if(!amountInput) return;
-            const amount = parseFloat(amountInput.value);
-            if(!amount || amount <= 0 || isNaN(amount)) return alert("Ingrese un monto válido");
-            if(!targetId) return alert("Error de sesión de cobro");
-            const client = state.clients.find(c => c.id === targetId);
-            if(!client) return alert("Cliente no encontrado");
-            if(amount > (client.debt + 0.01)) return alert("El abono no puede superar la deuda");
-            try {
-                const userPath = (col) => collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, col);
-                const docPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-                await updateDoc(docPath("clients", targetId), { debt: increment(-amount) });
-                await addDoc(userPath("sales"), { itemId: "ABONO", itemName: `Abono: ${client.name}`, qty: 1, total: amount, cost: 0, type: 'contado', date: new Date().toISOString() });
-                state.payingClientId = null;
-                state.activeModal = null;
-                render();
-            } catch (e) { alert("Error al procesar abono"); }
-        };
-
-        window.editVenta = (id) => {
-            state.editingSaleId = id;
-            render();
-        };
-
-        window.saveEditedVenta = async (saleId) => {
-            const sale = state.sales.find(s => s.id === saleId);
-            const newQty = Number(document.getElementById('editVQty').value);
-            const newTotal = Number(document.getElementById('editVTotal').value);
-            const newUnitCost = Number(document.getElementById('editVCost').value);
-            if(!newQty || newQty < 0) return alert("Cantidad inválida");
-            try {
-                const userDocPath = (col, id) => doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, col, id);
-                if(newQty !== sale.qty && sale.itemId !== "ABONO") {
-                    const diff = sale.qty - newQty; 
-                    await updateDoc(userDocPath("items", sale.itemId), { stock: increment(diff) });
-                }
-                if(sale.type === 'credito' && sale.clientId && newTotal !== sale.total) {
-                    const diffDeuda = newTotal - sale.total;
-                    await updateDoc(userDocPath("clients", sale.clientId), { debt: increment(diffDeuda) });
-                }
-                const updatedData = { qty: newQty, total: newTotal, cost: newUnitCost * newQty };
-                await updateDoc(userDocPath("sales", saleId), updatedData);
-                state.editingSaleId = null;
-                render();
-            } catch (e) { alert("Error al actualizar venta"); }
-        };
-
-        window.sincronizarCostos = async () => {
-            if (state.isSyncing) return;
-            state.isSyncing = true;
-            render();
-            try {
-                const batch = writeBatch(db);
-                let count = 0;
-                for (const sale of state.sales) {
-                    if (sale.itemId && sale.itemId !== "ABONO") {
-                        const currentItem = state.items.find(i => i.id === sale.itemId);
-                        if (currentItem && (currentItem.cost || currentItem.cost === 0)) {
-                            const saleCost = sale.cost || 0;
-                            const targetCost = Number(currentItem.cost) * Number(sale.qty);
-                            if (saleCost === 0 && targetCost > 0) {
-                                const saleRef = doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, "sales", sale.id);
-                                batch.update(saleRef, { cost: targetCost });
-                                count++;
-                            }
-                        }
-                    }
-                }
-                if (count > 0) await batch.commit();
-            } catch (e) { console.error(e); } finally { state.isSyncing = false; render(); }
-        };
-
-        window.sendNotification = async () => {
-            const title = document.getElementById('notifTitle').value.trim();
-            const msg = document.getElementById('notifMsg').value.trim();
-            if(!title || !msg) return alert("Complete los campos");
-            try {
-                const publicPath = collection(db, 'artifacts', appId, 'public', 'data', 'notifications');
-                await addDoc(publicPath, { title, message: msg, date: new Date().toISOString() });
-                alert("Notificación enviada");
-                document.getElementById('notifTitle').value = "";
-                document.getElementById('notifMsg').value = "";
-            } catch (e) { alert("Error al enviar"); }
-        };
-
-        window.deleteNotification = async (id) => {
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'notifications', id)); } catch (e) { alert("Error al eliminar"); }
-        };
-
-        window.toggleUserStatus = async (uid, currentStatus) => {
-            await updateDoc(doc(db, 'artifacts', appId, 'users', uid), { approved: !currentStatus });
-        };
-
-        window.logout = () => {
-            signOut(auth).then(() => {
-                state.user = null;
-                state.userData = null;
-                state.loading = false;
-                render();
-                location.reload();
-            });
-        };
-
-        window.setModal = (m) => { 
-            state.activeModal = m; 
-            if(m !== 'clientes') state.editingClientId = null;
-            if(m !== 'deudas') state.payingClientId = null;
-            if(m !== 'historial') state.editingSaleId = null;
-            render(); 
-        };
-
-        function calcularCaja() {
-            const v = state.sales.filter(s => s.type === 'contado').reduce((acc, s) => acc + Number(s.total), 0);
-            const e = state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
-            return (v - e).toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        function calcularDeudas() {
-            return state.clients.reduce((acc, client) => acc + Number(client.debt || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        function calcularGastos() {
-            return state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        function calcularGanancias() {
-            const cobrosEfectivos = state.sales.filter(s => s.type === 'contado');
-            const ingresosCobrados = cobrosEfectivos.reduce((acc, s) => acc + Number(s.total), 0);
-            const costosProductosCobrados = cobrosEfectivos
-                .filter(s => s.itemId !== "ABONO")
-                .reduce((acc, s) => acc + Number(s.cost || 0), 0);
-            const gastosOperativos = state.expenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
-            const gananciaNeta = (ingresosCobrados - costosProductosCobrados) - gastosOperativos;
-            return gananciaNeta.toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        // Nueva función para Ventas Totales
-        function calcularVentasTotales() {
-            const total = state.sales.reduce((acc, s) => acc + Number(s.total), 0);
-            return total.toLocaleString('en-US', { minimumFractionDigits: 2 });
-        }
-
-        let touchStartX = 0;
-        window.handleTouchStart = (e) => { touchStartX = e.changedTouches[0].screenX; };
-        window.handleTouchEnd = (e) => {
-            let touchEndX = e.changedTouches[0].screenX;
-            if (touchStartX - touchEndX > 50) {
-                if (state.carouselIndex < 3) state.carouselIndex++;
-            }
-            if (touchEndX - touchStartX > 50) {
-                if (state.carouselIndex > 0) state.carouselIndex--;
-            }
-            render();
-        };
-
-        function rend
+            const name = document.getElementById('cn').
